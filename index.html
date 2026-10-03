@@ -1,0 +1,1270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deep See World</title>
+<meta name="description" content="An educational point-and-click puzzle adventure through the ocean, from the sunlit reef to the Midnight Zone.">
+<style>
+  :root {
+    --bg: #04203a;
+    --panel: #0b2f52;
+    --panel-2: #12406b;
+    --ink: #eef8ff;
+    --ink-soft: #a9cbe6;
+    --accent: #ffd23f;
+    --accent-ink: #2a1d00;
+    --coral: #ff6f91;
+    --radius: 14px;
+    --font: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(ellipse at top, #0c3b66, var(--bg) 70%);
+    color: var(--ink);
+    font-family: var(--font);
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+  }
+  button { font: inherit; }
+
+  /* Top bar */
+  .topbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px;
+  }
+  .topbar h1 { margin: 0; font-size: 1.35rem; letter-spacing: .02em; display: flex; align-items: center; gap: 8px; }
+  .topbar h1 .see { color: var(--accent); }
+  .zone { display: flex; align-items: center; gap: 10px; color: var(--ink-soft); font-size: .95rem; margin-right: auto; }
+  .zone-bar { display: flex; gap: 3px; }
+  .zone-bar span { width: 26px; height: 8px; border-radius: 4px; background: #ffffff22; }
+  .zone-bar span.on { background: var(--accent); }
+  .zone-bar span.done { background: #ffd23f77; }
+  .btn {
+    border: 0; border-radius: 999px; padding: 9px 16px; cursor: pointer;
+    background: var(--panel-2); color: var(--ink); font-weight: 600;
+    transition: transform .12s, background .12s;
+  }
+  .btn:hover { background: #1b5288; }
+  .btn:active { transform: scale(.96); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.primary:hover { background: #ffe066; }
+  .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .icon-btn { padding: 9px 12px; }
+  .count { background: #ffffff22; border-radius: 999px; padding: 1px 8px; margin-left: 6px; font-size: .85em; }
+  .pulse { animation: pulse .8s ease; }
+  @keyframes pulse { 40% { transform: scale(1.18); background: var(--accent); color: var(--accent-ink); } }
+
+  /* Stage */
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0 16px 16px; gap: 10px; }
+  .stage {
+    position: relative;
+    width: min(100%, calc((100svh - 250px) * 5 / 3));
+    min-width: min(100%, 320px);
+    aspect-ratio: 5 / 3;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 10px 40px #0008, inset 0 0 0 2px #ffffff14;
+    background: #021020;
+  }
+  .scene {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    opacity: 0; visibility: hidden; transition: opacity .5s, visibility .5s;
+  }
+  .scene.active { opacity: 1; visibility: visible; }
+  .stage.diving .scene.active { opacity: 0; }
+  .nav-btn { position: absolute; left: 50%; transform: translateX(-50%); z-index: 2; box-shadow: 0 4px 14px #0007; }
+  .nav-btn.up { top: 10px; }
+  .nav-btn.down { bottom: 12px; left: auto; right: 12px; transform: none; animation: beckon 1.6s ease-in-out infinite; }
+  @keyframes beckon { 50% { transform: translateY(5px); } }
+  [hidden] { display: none !important; }
+
+  /* Clickable things in the scenes */
+  .hit { cursor: pointer; outline: none; }
+  .hit:hover, .hit:focus-visible, .hit.selected { filter: url(#glow); }
+  /* Animate the inner group: the .hit group's own transform attribute positions it in the scene. */
+  .hit.selected > .mover > * { animation: wiggle .5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: center; }
+  @keyframes wiggle { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+  .mover { transition: transform 1.6s cubic-bezier(.45,.05,.3,1); }
+  .bob { animation: bob 3.2s ease-in-out infinite; }
+  .bob.slow { animation-duration: 5s; }
+  @keyframes bob { 50% { transform: translateY(-8px); } }
+  .sway { animation: sway 3.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+  @keyframes sway { from { transform: rotate(-4deg); } to { transform: rotate(4deg); } }
+  .ray { animation: ray 6s ease-in-out infinite alternate; }
+  .ray:nth-child(2n) { animation-delay: -3s; }
+  @keyframes ray { from { opacity: .35; } to { opacity: .9; } }
+  .bubble { animation: rise linear infinite; }
+  @keyframes rise { from { transform: translateY(0); opacity: .8; } to { transform: translateY(-640px); opacity: 0; } }
+  .drift { animation: drift 18s linear infinite; }
+  @keyframes drift { from { transform: translateX(-200px); } to { transform: translateX(1200px); } }
+  .snow { animation: snow linear infinite; }
+  @keyframes snow { from { transform: translateY(-40px); } to { transform: translateY(640px); } }
+  .heart { animation: heart 1.6s ease-out forwards; font-size: 36px; pointer-events: none; }
+  @keyframes heart { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-70px); opacity: 0; } }
+
+  /* Twilight: day/night sky and the migrating school */
+  #scene-twilight .sky { transition: fill 1.5s; fill: #1b2246; }
+  #scene-twilight.is-day .sky { fill: #8fd3ff; }
+  #scene-twilight .sun, #scene-twilight .moon, #scene-twilight .stars { transition: opacity 1.5s; }
+  #scene-twilight.is-day .moon, #scene-twilight.is-day .stars { opacity: 0; }
+  #scene-twilight.is-night .sun { opacity: 0; }
+  #school .mover { transition: transform 2.6s cubic-bezier(.45,.05,.3,1); }
+  #school.up .mover { transform: translateY(-330px); }
+  #school.shake .bob { animation: shake .4s; }
+  @keyframes shake { 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+  .plankton circle { transition: opacity 1.5s 1.4s; }
+  .plankton.eaten circle { opacity: .15; }
+
+  /* Midnight: lights that flash */
+  .light .dot { opacity: .75; transition: opacity .2s; }
+  .light .halo { opacity: 0; transition: opacity .25s; }
+  .light.flash .dot { opacity: 1; }
+  .light.flash .halo { opacity: 1; }
+  .lure-glow { animation: glow 2.4s ease-in-out infinite alternate; }
+  @keyframes glow { from { opacity: .55; } to { opacity: 1; } }
+
+  /* Caption */
+  .caption {
+    width: min(100%, 1100px);
+    background: var(--panel); border-radius: var(--radius);
+    padding: 14px 18px; display: grid; gap: 10px;
+    box-shadow: inset 0 0 0 2px #ffffff10;
+  }
+  .prompt-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+  #prompt { margin: 0; font-size: 1.12rem; line-height: 1.45; flex: 1 1 320px; }
+  #actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .fact {
+    border-left: 5px solid var(--accent); background: #ffffff0d; border-radius: 10px;
+    padding: 10px 14px; animation: factIn .45s ease;
+  }
+  .fact strong { display: block; color: var(--accent); margin-bottom: 2px; }
+  .fact p { margin: 0; line-height: 1.45; color: var(--ink); }
+  .badge { display: inline-block; background: var(--coral); color: #fff; font-size: .75rem; font-weight: 700; border-radius: 999px; padding: 2px 8px; margin-right: 8px; vertical-align: 2px; }
+  @keyframes factIn { from { opacity: 0; transform: translateY(8px); } }
+
+  /* Journal */
+  dialog.journal {
+    width: min(920px, calc(100% - 32px)); max-height: calc(100svh - 48px);
+    border: 0; border-radius: 18px; padding: 0; background: var(--panel); color: var(--ink);
+  }
+  dialog.journal::backdrop { background: #000b; }
+  .journal header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; position: sticky; top: 0; background: var(--panel); z-index: 1; }
+  .journal h2 { margin: 0; font-size: 1.3rem; margin-right: auto; }
+  .journal .sub { color: var(--ink-soft); }
+  .journal section { padding: 0 20px 18px; }
+  .journal h3 { margin: 6px 0 10px; font-size: 1rem; color: var(--ink-soft); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .card { background: #ffffff0f; border-radius: 12px; padding: 12px 14px; border-top: 4px solid var(--zc, #fff); }
+  .card b { display: block; margin-bottom: 4px; }
+  .card p { margin: 0; font-size: .93rem; line-height: 1.4; color: var(--ink-soft); }
+  .card.locked { opacity: .5; border-top-style: dashed; }
+  .z-reef { --zc: #4fd1e8; } .z-twilight { --zc: #4a6fd1; } .z-midnight { --zc: #b366ff; }
+
+  /* Turtle Lunch */
+  .overlay { position: fixed; inset: 0; background: #000c; display: grid; place-items: center; z-index: 10; padding: 16px; }
+  .game-box { position: relative; width: min(100%, 860px); }
+  #turtleCanvas { display: block; width: 100%; aspect-ratio: 5 / 3; border-radius: var(--radius); touch-action: none; background: #0b5d8f; }
+  .game-panel {
+    position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 12px; padding: 24px;
+    background: #021a30cc; border-radius: var(--radius);
+  }
+  .game-panel h2 { margin: 0; font-size: 2rem; }
+  .game-panel p { margin: 0 auto; max-width: 46ch; font-size: 1.1rem; line-height: 1.45; }
+  .game-panel .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  @media (max-width: 600px) {
+    .topbar h1 { font-size: 1.1rem; }
+    .label { display: none; }
+    #prompt { font-size: 1rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition-duration: .01s !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Shared SVG definitions (filters, gradients, reusable shapes) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feFlood flood-color="#fff6a8"/>
+      <feComposite in2="SourceAlpha" operator="in"/>
+      <feGaussianBlur stdDeviation="5"/>
+      <feMerge><feMergeNode/><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="g-reef-water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5fe0f0"/>
+      <stop offset=".55" stop-color="#1c8fc4"/>
+      <stop offset="1" stop-color="#0f5d91"/>
+    </linearGradient>
+    <linearGradient id="g-ray" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="g-twilight-water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a63a3"/>
+      <stop offset=".35" stop-color="#143b72"/>
+      <stop offset="1" stop-color="#06122b"/>
+    </linearGradient>
+    <linearGradient id="g-midnight-water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#07102a"/>
+      <stop offset="1" stop-color="#010207"/>
+    </linearGradient>
+    <radialGradient id="g-spot">
+      <stop offset="0" stop-color="#000"/>
+      <stop offset=".6" stop-color="#000"/>
+      <stop offset="1" stop-color="#fff"/>
+    </radialGradient>
+    <radialGradient id="g-halo-yellow"><stop offset="0" stop-color="#e8ff7a" stop-opacity=".75"/><stop offset="1" stop-color="#e8ff7a" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g-halo-blue"><stop offset="0" stop-color="#4fa3ff" stop-opacity=".75"/><stop offset="1" stop-color="#4fa3ff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g-halo-aqua"><stop offset="0" stop-color="#5cffd8" stop-opacity=".7"/><stop offset="1" stop-color="#5cffd8" stop-opacity="0"/></radialGradient>
+    <linearGradient id="g-cone" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff8c0" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#fff8c0" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="clip-clown"><ellipse rx="40" ry="22"/></clipPath>
+    <g id="tentacles" fill="none" stroke-linecap="round">
+      <path d="M-40 -30 Q-70 -80 -55 -120"/>
+      <path d="M-30 -38 Q-45 -95 -30 -135"/>
+      <path d="M-18 -42 Q-30 -100 -10 -145"/>
+      <path d="M-6 -44 Q-5 -100 5 -150"/>
+      <path d="M6 -44 Q15 -100 22 -145"/>
+      <path d="M18 -42 Q35 -95 40 -135"/>
+      <path d="M30 -38 Q55 -85 58 -122"/>
+      <path d="M40 -30 Q70 -70 72 -105"/>
+    </g>
+    <symbol id="lanternfish" overflow="visible">
+      <path d="M-14 0 L-26 -8 L-24 0 L-26 8Z" fill="#33507a"/>
+      <ellipse rx="17" ry="6.5" fill="#3d5f8f"/>
+      <circle cx="10" cy="-1.5" r="3" fill="#cfe3ff"/>
+      <circle cx="10.6" cy="-1.5" r="1.5" fill="#0a1020"/>
+      <g fill="#7ff9ff" filter="url(#softglow)">
+        <circle cx="-8" cy="3.5" r="1.6"/><circle cx="-2" cy="4" r="1.6"/><circle cx="4" cy="3.8" r="1.6"/><circle cx="12" cy="3" r="1.4"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <h1><span aria-hidden="true">👁️‍🗨️</span><span>Deep <span class="see">See</span> World</span></h1>
+  <div class="zone" aria-live="polite">
+    <div class="zone-bar" aria-hidden="true"><span data-room="reef"></span><span data-room="twilight"></span><span data-room="midnight"></span></div>
+    <span id="zoneText"></span>
+  </div>
+  <button class="btn" id="btnJournal" type="button">📖 <span class="label" data-t="ui.journal"></span><span class="count" id="factCount">0/0</span></button>
+  <button class="btn icon-btn" id="btnSound" type="button" aria-pressed="true">🔊</button>
+  <button class="btn icon-btn" id="btnRestart" type="button" data-t-title="ui.restart">↺</button>
+</header>
+
+<main>
+  <div class="stage" id="stage">
+
+    <!-- ===================== SUNLIT ZONE: CORAL REEF ===================== -->
+    <svg id="scene-reef" class="scene" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" role="group" aria-label="A sunny coral reef">
+      <rect width="1000" height="600" fill="url(#g-reef-water)"/>
+      <g class="rays" fill="url(#g-ray)">
+        <polygon class="ray" points="120,0 200,0 400,600 250,600"/>
+        <polygon class="ray" points="330,0 380,0 560,600 470,600"/>
+        <polygon class="ray" points="560,0 650,0 820,600 680,600"/>
+        <polygon class="ray" points="800,0 850,0 1000,480 960,600"/>
+      </g>
+      <path d="M0 16 Q25 6 50 16 T100 16 T150 16 T200 16 T250 16 T300 16 T350 16 T400 16 T450 16 T500 16 T550 16 T600 16 T650 16 T700 16 T750 16 T800 16 T850 16 T900 16 T950 16 T1000 16 V0 H0Z" fill="#fff" opacity=".35"/>
+
+      <!-- far fish school -->
+      <g fill="#0d4f7a" opacity=".35">
+        <g class="drift"><path d="M0 200 q12 -7 24 0 q-12 7 -24 0z m0 0 l-7 -5 v10z"/><path d="M40 215 q12 -7 24 0 q-12 7 -24 0z m0 0 l-7 -5 v10z"/><path d="M15 235 q12 -7 24 0 q-12 7 -24 0z m0 0 l-7 -5 v10z"/><path d="M60 190 q12 -7 24 0 q-12 7 -24 0z m0 0 l-7 -5 v10z"/></g>
+      </g>
+      <!-- distant reef -->
+      <path d="M0 470 Q60 420 120 450 Q170 400 240 445 Q320 410 380 450 Q470 420 540 455 Q640 415 720 450 Q820 420 1000 440 V600 H0Z" fill="#0e5f8c" opacity=".55"/>
+
+      <!-- plankton (oxygen fact) -->
+      <g class="hit" data-id="plankton" data-fact="oxygen" aria-label="Phytoplankton" transform="translate(150,95)">
+        <circle r="55" fill="#fff" fill-opacity=".001"/>
+        <g class="bob slow" fill="#b9f7a2">
+          <circle cx="-30" cy="-10" r="4"/><circle cx="-12" cy="8" r="3"/><circle cx="6" cy="-18" r="3.5"/><circle cx="22" cy="4" r="4"/>
+          <circle cx="36" cy="-12" r="2.5"/><circle cx="-40" cy="14" r="2.5"/><circle cx="10" cy="22" r="3"/><circle cx="-20" cy="-30" r="2.5"/>
+          <path d="M-4 -2 l6 -6 l6 6 l-6 6z" fill="#d9ffb8"/><path d="M28 -30 l5 -5 l5 5 l-5 5z" fill="#d9ffb8"/>
+        </g>
+      </g>
+
+      <!-- sand -->
+      <path d="M0 500 C150 470 300 520 450 495 S750 470 1000 505 V600 H0Z" fill="#e8cf8f"/>
+      <path d="M0 540 C200 520 350 560 520 540 S800 525 1000 545 V600 H0Z" fill="#f2dca3"/>
+      <g fill="#c9ad6a"><circle cx="80" cy="560" r="3"/><circle cx="260" cy="575" r="2"/><circle cx="640" cy="565" r="3"/><circle cx="910" cy="585" r="2"/><circle cx="420" cy="585" r="2.5"/></g>
+
+      <!-- fan coral (decoration) -->
+      <g transform="translate(55,500)" stroke="#9b5bd1" stroke-width="5" stroke-linecap="round" fill="none" opacity=".9">
+        <path d="M0 0 L-40 -110 M0 0 L-15 -125 M0 0 L15 -125 M0 0 L42 -105 M-20 -55 L22 -55 M-30 -85 L32 -82 M-36 -100 L-10 -110 M10 -112 L38 -96"/>
+      </g>
+
+      <!-- brain coral (reef fact) -->
+      <g class="hit" data-id="brainCoral" data-fact="reefLife" aria-label="Brain coral" transform="translate(95,525)">
+        <path d="M-70 0 Q-70 -70 0 -72 Q70 -70 70 0Z" fill="#df9a62" stroke="#a3612f" stroke-width="3"/>
+        <g stroke="#b86c36" stroke-width="3" fill="none" stroke-linecap="round">
+          <path d="M-58 -12 q10 -14 20 0 t20 0 t20 0 t20 0 t20 0"/>
+          <path d="M-50 -32 q10 -14 20 0 t20 0 t20 0 t20 0"/>
+          <path d="M-34 -52 q10 -12 20 0 t20 0 t20 0"/>
+        </g>
+      </g>
+
+      <!-- sea anemone -->
+      <g class="hit" data-id="anemone" aria-label="Sea anemone" transform="translate(215,505)">
+        <g class="mover">
+          <g class="sway">
+            <use href="#tentacles" stroke="#ff8fc8" stroke-width="13"/>
+            <use href="#tentacles" stroke="#ffd0e8" stroke-width="4"/>
+          </g>
+          <path d="M-52 0 Q-46 -42 0 -46 Q46 -42 52 0Z" fill="#8e4bb5" stroke="#5f2d82" stroke-width="3"/>
+        </g>
+      </g>
+
+      <!-- clownfish -->
+      <g class="hit" data-id="clownfish" aria-label="Clownfish" transform="translate(380,290)">
+        <g class="mover"><g class="bob">
+          <path d="M-36 0 L-60 -18 Q-53 0 -60 18Z" fill="#ff7a1a" stroke="#1f1f1f" stroke-width="2.5" stroke-linejoin="round"/>
+          <path d="M-14 -20 Q2 -38 22 -18" fill="#ff7a1a" stroke="#1f1f1f" stroke-width="2.5"/>
+          <path d="M0 18 Q8 32 18 18" fill="#ff7a1a" stroke="#1f1f1f" stroke-width="2.5"/>
+          <ellipse rx="40" ry="22" fill="#ff8a1f"/>
+          <g clip-path="url(#clip-clown)" fill="#fff" stroke="#1f1f1f" stroke-width="2.5">
+            <ellipse cx="-16" rx="6" ry="24"/>
+            <ellipse cx="14" rx="6" ry="24"/>
+          </g>
+          <ellipse rx="40" ry="22" fill="none" stroke="#1f1f1f" stroke-width="3"/>
+          <circle cx="27" cy="-6" r="5.5" fill="#fff"/><circle cx="28.5" cy="-6" r="3" fill="#111"/>
+          <path d="M38 7 q-4 3 -8 1" fill="none" stroke="#1f1f1f" stroke-width="2" stroke-linecap="round"/>
+        </g></g>
+      </g>
+
+      <!-- sand burrow -->
+      <path d="M432 553 Q470 528 508 553Z" fill="#d9bd7c"/>
+      <ellipse cx="470" cy="553" rx="30" ry="10" fill="#4a3a1f"/>
+
+      <!-- goby -->
+      <g class="hit" data-id="goby" aria-label="Goby" transform="translate(370,540)">
+        <g class="mover"><g class="bob slow">
+          <path d="M-26 0 L-40 -9 L-38 0 L-40 9Z" fill="#e8c650" stroke="#8a6d1f" stroke-width="2"/>
+          <path d="M-12 -9 Q-4 -22 6 -9" fill="#f5d76e" stroke="#8a6d1f" stroke-width="2"/>
+          <ellipse rx="28" ry="10" fill="#f5d76e" stroke="#8a6d1f" stroke-width="2.5"/>
+          <g fill="#4aa8e8"><circle cx="-12" cy="2" r="2"/><circle cx="-2" cy="-2" r="2"/><circle cx="8" cy="3" r="2"/><circle cx="-18" cy="-3" r="1.6"/></g>
+          <circle cx="17" cy="-8" r="5.5" fill="#fff" stroke="#8a6d1f" stroke-width="1.5"/><circle cx="18.5" cy="-8.5" r="3" fill="#111"/>
+        </g></g>
+      </g>
+
+      <!-- pistol shrimp (faces left, toward the burrow) -->
+      <g class="hit" data-id="pistol" aria-label="Pistol shrimp" transform="translate(545,545)">
+        <g class="mover"><g><g transform="scale(-1,1)">
+          <g stroke="#a34c0a" stroke-width="2" stroke-linejoin="round">
+            <path d="M-30 0 L-44 -8 L-42 8Z" fill="#ff8a2a"/>
+            <path d="M-30 0 Q-24 -16 0 -14 Q16 -12 22 -4 Q14 6 -4 6 Q-22 8 -30 0Z" fill="#ff9a3c"/>
+            <path d="M18 -4 Q26 -10 30 -8" fill="none"/>
+            <ellipse cx="38" cy="-8" rx="17" ry="9.5" fill="#ff7b1c"/>
+            <path d="M50 -12 L58 -9 L50 -5" fill="#ff7b1c"/>
+            <ellipse cx="26" cy="4" rx="7" ry="3.5" fill="#ff9a3c"/>
+          </g>
+          <path d="M20 -10 Q45 -30 70 -26 M20 -9 Q50 -22 72 -14" fill="none" stroke="#ffcf9e" stroke-width="1.5"/>
+          <circle cx="16" cy="-9" r="1.6" fill="#333"/>
+        </g></g></g>
+      </g>
+
+      <!-- branching coral -->
+      <g class="hit" data-id="coral" data-fact="coral" aria-label="Branching coral" transform="translate(625,508)">
+        <g stroke="#ff6f91" stroke-width="14" stroke-linecap="round" fill="none">
+          <path d="M0 0 V-60 M0 -30 Q-25 -45 -30 -80 M0 -45 Q22 -60 26 -95 M0 -60 Q-6 -85 -2 -112 M-30 -80 Q-45 -95 -42 -116 M26 -95 Q40 -105 44 -124"/>
+        </g>
+        <g fill="#ffd1dc"><circle cx="-2" cy="-112" r="3.5"/><circle cx="-42" cy="-116" r="3.5"/><circle cx="44" cy="-124" r="3.5"/><circle cx="-30" cy="-80" r="2.5"/><circle cx="26" cy="-95" r="2.5"/><circle cx="6" cy="-40" r="2"/><circle cx="-8" cy="-70" r="2"/></g>
+      </g>
+
+      <!-- rock with the moray eel's hole -->
+      <path d="M745 600 L748 430 Q765 335 855 325 Q960 315 1000 365 V600Z" fill="#6c7a89"/>
+      <path d="M760 600 L765 470 Q790 400 860 395 Q930 392 1000 430 V600Z" fill="#5d6a78"/>
+      <g fill="#4f5b68"><circle cx="800" cy="520" r="9"/><circle cx="950" cy="490" r="12"/><circle cx="900" cy="560" r="7"/><circle cx="790" cy="380" r="6"/></g>
+      <ellipse cx="885" cy="425" rx="46" ry="38" fill="#1c2530"/>
+
+      <!-- moray eel (faces left, out of its hole) -->
+      <g class="hit" data-id="eel" aria-label="Moray eel" transform="translate(830,412)">
+        <g class="mover"><g>
+        <path d="M75 18 Q45 8 10 2" fill="none" stroke="#6a9a2f" stroke-width="42" stroke-linecap="round"/>
+        <path d="M20 -22 Q-30 -26 -48 -4 L-20 2 L-46 12 Q-30 26 20 22Z" fill="#6a9a2f" stroke="#2f4a14" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M-48 -4 L-20 2 L-46 12Z" fill="#7a1f2b"/>
+        <path d="M-42 -3 l3 4 l3 -3 l3 4 l3 -3 l3 4" fill="none" stroke="#fff" stroke-width="1.5"/>
+        <circle cx="-18" cy="-12" r="6" fill="#ffd23f"/><circle cx="-19" cy="-12" r="3" fill="#111"/>
+        <g fill="#4d7a1d"><circle cx="10" cy="-12" r="3"/><circle cx="2" cy="12" r="2.5"/><circle cx="35" cy="0" r="3"/><circle cx="55" cy="16" r="3"/></g>
+        </g></g>
+      </g>
+
+      <!-- cleaner shrimp (faces right, toward the eel) -->
+      <g class="hit" data-id="shrimp" aria-label="Cleaner shrimp" transform="translate(690,468)">
+        <g class="mover"><g class="bob">
+          <path d="M28 -4 Q60 -40 92 -30 M28 -2 Q70 -20 96 -8" fill="none" stroke="#fff" stroke-width="1.6"/>
+          <g stroke="#c4202f" stroke-width="1.6"><path d="M-10 8 l-4 10 M0 8 l-2 11 M10 7 l1 11"/></g>
+          <path d="M-28 4 L-42 -4 L-40 12Z" fill="#e8323f"/>
+          <path d="M-28 4 Q-20 -14 4 -12 Q24 -10 30 0 Q20 8 0 8 Q-18 10 -28 4Z" fill="#fff" stroke="#c4202f" stroke-width="2"/>
+          <path d="M-24 0 Q-10 -10 22 -6" fill="none" stroke="#e8323f" stroke-width="5" stroke-linecap="round"/>
+          <circle cx="22" cy="-5" r="2.6" fill="#111"/>
+        </g></g>
+      </g>
+
+      <!-- leatherback sea turtle (faces left) -->
+      <g class="hit" data-id="turtle" aria-label="Leatherback sea turtle" transform="translate(560,150)">
+        <g class="bob slow"><g transform="scale(-1,1)">
+          <path d="M10 -8 Q-5 -38 -40 -50 Q-15 -25 -2 -6Z" fill="#2a3746"/>
+          <path d="M-40 6 Q-55 20 -64 24 Q-50 8 -44 2Z" fill="#3b4a5a"/>
+          <ellipse rx="52" ry="26" fill="#2f3e4e"/>
+          <g stroke="#4c5f73" stroke-width="3" fill="none"><path d="M-48 0 H46"/><path d="M-44 -12 Q0 -21 44 -10"/><path d="M-44 12 Q0 21 44 10"/></g>
+          <g fill="#c9d6e3"><circle cx="-20" cy="-6" r="2"/><circle cx="10" cy="6" r="2"/><circle cx="24" cy="-6" r="1.6"/><circle cx="-30" cy="8" r="1.6"/></g>
+          <circle cx="60" cy="-3" r="16" fill="#3b4a5a"/>
+          <g fill="#c9d6e3"><circle cx="56" cy="-12" r="1.8"/><circle cx="66" cy="6" r="1.5"/></g>
+          <circle cx="66" cy="-7" r="3" fill="#111"/><circle cx="67" cy="-8" r="1" fill="#fff"/>
+          <path d="M12 8 Q-8 42 -52 54 Q-20 30 -4 6Z" fill="#3b4a5a"/>
+        </g></g>
+      </g>
+
+      <!-- bubbles -->
+      <g fill="#fff" fill-opacity=".25" stroke="#fff" stroke-opacity=".6">
+        <circle class="bubble" cx="300" cy="590" r="6" style="animation-duration:7s"/>
+        <circle class="bubble" cx="880" cy="400" r="5" style="animation-duration:6s;animation-delay:-2s"/>
+        <circle class="bubble" cx="890" cy="420" r="3" style="animation-duration:6s;animation-delay:-4s"/>
+        <circle class="bubble" cx="470" cy="560" r="4" style="animation-duration:8s;animation-delay:-1s"/>
+        <circle class="bubble" cx="230" cy="380" r="3.5" style="animation-duration:9s;animation-delay:-5s"/>
+      </g>
+    </svg>
+
+    <!-- ===================== TWILIGHT ZONE ===================== -->
+    <svg id="scene-twilight" class="scene is-night" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" role="group" aria-label="The dim blue Twilight Zone">
+      <rect class="sky" width="1000" height="72"/>
+      <g class="stars" fill="#fff"><circle cx="120" cy="20" r="1.5"/><circle cx="260" cy="40" r="1.2"/><circle cx="420" cy="18" r="1.6"/><circle cx="600" cy="34" r="1.2"/><circle cx="720" cy="14" r="1.4"/><circle cx="960" cy="44" r="1.2"/></g>
+      <g class="moon"><circle cx="860" cy="34" r="20" fill="#f4f1d0"/><circle cx="870" cy="28" r="18" fill="#1b2246"/></g>
+      <circle class="sun" cx="860" cy="34" r="22" fill="#ffd23f"/>
+      <rect y="70" width="1000" height="530" fill="url(#g-twilight-water)"/>
+      <path d="M0 72 Q25 64 50 72 T100 72 T150 72 T200 72 T250 72 T300 72 T350 72 T400 72 T450 72 T500 72 T550 72 T600 72 T650 72 T700 72 T750 72 T800 72 T850 72 T900 72 T950 72 T1000 72 V80 H0Z" fill="#7fb6e8" opacity=".6"/>
+
+      <!-- plankton near the surface -->
+      <g class="plankton" fill="#9ff5b0">
+        <circle cx="430" cy="110" r="2.5"/><circle cx="470" cy="135" r="2"/><circle cx="510" cy="100" r="3"/><circle cx="545" cy="140" r="2"/>
+        <circle cx="580" cy="115" r="2.5"/><circle cx="620" cy="132" r="2"/><circle cx="655" cy="105" r="2.5"/><circle cx="490" cy="160" r="2"/>
+        <circle cx="560" cy="165" r="2.5"/><circle cx="600" cy="155" r="2"/><circle cx="450" cy="150" r="2"/><circle cx="640" cy="160" r="2.5"/>
+      </g>
+
+      <!-- marine snow -->
+      <g fill="#dfeaff" opacity=".5">
+        <circle class="snow" cx="90" cy="80" r="1.5" style="animation-duration:14s"/>
+        <circle class="snow" cx="300" cy="60" r="1.2" style="animation-duration:18s;animation-delay:-6s"/>
+        <circle class="snow" cx="700" cy="40" r="1.5" style="animation-duration:16s;animation-delay:-10s"/>
+        <circle class="snow" cx="930" cy="90" r="1.2" style="animation-duration:20s;animation-delay:-3s"/>
+        <circle class="snow" cx="520" cy="70" r="1" style="animation-duration:15s;animation-delay:-8s"/>
+      </g>
+
+      <!-- sperm whale -->
+      <g class="hit" data-id="spermWhale" data-fact="spermWhale" aria-label="Sperm whale" transform="translate(220,270) scale(.85)">
+        <g class="bob slow">
+          <path d="M190 -20 Q192 -46 160 -48 L20 -46 Q-80 -40 -160 -8 L-200 -26 Q-206 -4 -196 0 Q-206 6 -200 26 L-160 8 Q-80 34 20 38 L160 36 Q192 34 190 10Z" fill="#46505f" stroke="#2b333e" stroke-width="3" stroke-linejoin="round"/>
+          <path d="M175 26 L60 30" stroke="#6b7686" stroke-width="3" fill="none"/>
+          <path d="M40 34 Q30 54 0 60 Q20 44 18 34Z" fill="#3a434f"/>
+          <g stroke="#3a434f" stroke-width="2" fill="none"><path d="M-40 -20 q10 4 20 0"/><path d="M-80 -12 q10 4 20 0"/><path d="M0 -26 q10 4 20 0"/></g>
+          <circle cx="128" cy="6" r="3.5" fill="#cfd8e6"/>
+        </g>
+      </g>
+
+      <!-- hatchetfish -->
+      <g class="hit" data-id="hatchetfish" data-fact="hatchetfish" aria-label="Hatchetfish" transform="translate(840,300) scale(1.4)">
+        <g class="bob">
+          <path d="M-30 -2 L-46 -10 L-46 8Z" fill="#9aa8c0"/>
+          <path d="M-30 -10 Q-10 -35 20 -30 Q34 -10 30 10 Q10 32 -24 14 L-34 0Z" fill="#c9d4e6" stroke="#7d8aa3" stroke-width="2"/>
+          <path d="M-20 -6 Q0 -14 22 -12" fill="none" stroke="#e8eef8" stroke-width="2"/>
+          <g fill="#8fe7ff" filter="url(#softglow)"><circle cx="-16" cy="14" r="2"/><circle cx="-8" cy="17" r="2"/><circle cx="0" cy="18" r="2"/><circle cx="8" cy="16" r="2"/><circle cx="16" cy="13" r="2"/></g>
+          <circle cx="14" cy="-17" r="7" fill="#fff"/><circle cx="14" cy="-19" r="4" fill="#111"/>
+        </g>
+      </g>
+
+      <!-- the lanternfish school -->
+      <g id="school" class="hit" data-id="lanternfish" data-fact="lanternfish" aria-label="A school of lanternfish">
+        <g class="mover"><g class="bob">
+          <rect x="440" y="420" width="220" height="115" fill="#fff" fill-opacity=".001"/>
+          <use href="#lanternfish" x="470" y="450"/><use href="#lanternfish" x="522" y="440"/><use href="#lanternfish" x="577" y="455"/>
+          <use href="#lanternfish" x="628" y="444"/><use href="#lanternfish" x="497" y="480"/><use href="#lanternfish" x="552" y="476"/>
+          <use href="#lanternfish" x="607" y="486"/><use href="#lanternfish" x="522" y="510"/><use href="#lanternfish" x="582" y="513"/>
+        </g></g>
+      </g>
+    </svg>
+
+    <!-- ===================== MIDNIGHT ZONE ===================== -->
+    <svg id="scene-midnight" class="scene" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" role="group" aria-label="The pitch-dark Midnight Zone">
+      <defs>
+        <mask id="flashlight-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="600">
+          <rect width="1000" height="600" fill="#fff"/>
+          <circle id="spot" cx="500" cy="320" r="140" fill="url(#g-spot)"/>
+        </mask>
+      </defs>
+      <rect width="1000" height="600" fill="url(#g-midnight-water)"/>
+      <path d="M0 540 Q200 505 400 540 T800 528 T1000 545 V600 H0Z" fill="#1b2136"/>
+      <g fill="#2a3150"><circle cx="150" cy="560" r="10"/><circle cx="620" cy="555" r="14"/><circle cx="880" cy="570" r="8"/></g>
+
+      <!-- anglerfish -->
+      <g class="hit" data-id="anglerfish" data-fact="anglerfish" aria-label="Anglerfish" transform="translate(260,360)">
+        <path d="M10 -60 Q40 -130 95 -110" fill="none" stroke="#6b5050" stroke-width="4"/>
+        <path d="M-68 0 L-102 -28 L-96 0 L-102 28Z" fill="#4a3434"/>
+        <path d="M-70 0 Q-70 -60 0 -62 Q60 -60 78 -12 L40 4 L78 22 Q60 60 0 58 Q-70 56 -70 0Z" fill="#4a3434" stroke="#7a5a5a" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M78 -12 L40 4 L78 22Z" fill="#1a0c0c"/>
+        <path d="M74 -10 l-4 8 l-4 -6 l-4 8 l-4 -6 l-4 8 M74 20 l-4 -8 l-4 6 l-4 -8 l-4 6 l-4 -8" fill="none" stroke="#eee" stroke-width="2"/>
+        <circle cx="30" cy="-30" r="6" fill="#bcd"/><circle cx="31" cy="-30" r="3" fill="#111"/>
+        <path d="M-20 -58 Q-10 -76 4 -60" fill="#4a3434" stroke="#7a5a5a" stroke-width="2"/>
+      </g>
+
+      <!-- Atolla jellyfish -->
+      <g class="hit" data-id="atolla" data-fact="atolla" aria-label="Atolla jellyfish" transform="translate(540,210)">
+        <g stroke="#8a2a3a" stroke-width="2" fill="none">
+          <path d="M-50 4 q-6 40 4 80"/><path d="M-25 8 q6 50 -4 90"/><path d="M0 8 q-6 45 4 100"/><path d="M25 8 q8 40 -2 85"/><path d="M50 4 q4 40 -6 75"/>
+          <path d="M-10 6 q-20 60 10 150" stroke-width="1.2"/>
+        </g>
+        <path d="M-60 0 Q-60 -55 0 -58 Q60 -55 60 0 Q30 10 0 8 Q-30 10 -60 0Z" fill="#7a1426" stroke="#a23048" stroke-width="2"/>
+        <ellipse cy="-24" rx="30" ry="16" fill="#5a0c1c"/>
+      </g>
+
+      <!-- vampire squid -->
+      <g class="hit" data-id="vampireSquid" data-fact="vampireSquid" aria-label="Vampire squid" transform="translate(790,380)">
+        <ellipse cx="-24" cy="-56" rx="14" ry="8" transform="rotate(-30 -24 -56)" fill="#8a1426"/>
+        <ellipse cx="24" cy="-56" rx="14" ry="8" transform="rotate(30 24 -56)" fill="#8a1426"/>
+        <path d="M0 -72 Q30 -62 28 -10 L0 10 L-28 -10 Q-30 -62 0 -72Z" fill="#8a1426" stroke="#b02a40" stroke-width="2"/>
+        <path d="M-28 -10 Q-70 30 -60 70 Q-30 50 -15 75 Q0 55 15 75 Q30 50 60 70 Q70 30 28 -10Z" fill="#5c0b18" stroke="#8a1a2c" stroke-width="2" stroke-linejoin="round"/>
+        <g stroke="#e8d0d4" stroke-width="2"><path d="M-40 30 l-6 4 M-22 40 l-5 5 M22 40 l5 5 M40 30 l6 4"/></g>
+        <circle cx="-12" cy="-16" r="9" fill="#2b4cff"/><circle cx="12" cy="-16" r="9" fill="#2b4cff"/>
+        <circle cx="-12" cy="-16" r="4" fill="#020414"/><circle cx="12" cy="-16" r="4" fill="#020414"/>
+      </g>
+
+      <!-- research robot (ROV) -->
+      <g class="hit" data-id="rov" data-fact="pressure" aria-label="Deep-sea research robot" transform="translate(890,110)">
+        <polygon points="-44,6 -44,14 -330,330 -200,360" fill="url(#g-cone)"/>
+        <rect x="-40" y="-26" width="80" height="50" rx="8" fill="#f4c430" stroke="#8a6a00" stroke-width="3"/>
+        <path d="M-40 -6 H40 M-14 -26 V24" stroke="#8a6a00" stroke-width="2"/>
+        <circle cx="-44" cy="10" r="10" fill="#222" stroke="#666" stroke-width="2"/><circle cx="-44" cy="10" r="4" fill="#8cf"/>
+        <rect x="20" y="-38" width="16" height="12" rx="3" fill="#555"/><rect x="-36" y="24" width="20" height="10" rx="3" fill="#555"/>
+        <path d="M30 24 l10 20 l-8 6" stroke="#999" stroke-width="4" fill="none" stroke-linecap="round"/>
+        <text x="8" y="14" font-size="12" font-weight="700" fill="#8a6a00" text-anchor="middle">DSW</text>
+      </g>
+
+      <!-- marine snow -->
+      <g fill="#dfeaff" opacity=".45">
+        <circle class="snow" cx="120" cy="40" r="1.4" style="animation-duration:16s"/>
+        <circle class="snow" cx="380" cy="20" r="1.2" style="animation-duration:19s;animation-delay:-7s"/>
+        <circle class="snow" cx="660" cy="50" r="1.4" style="animation-duration:15s;animation-delay:-4s"/>
+        <circle class="snow" cx="900" cy="30" r="1.2" style="animation-duration:21s;animation-delay:-12s"/>
+      </g>
+
+      <!-- darkness, with a hole where the player's light shines -->
+      <rect width="1000" height="600" fill="#000" opacity=".9" mask="url(#flashlight-mask)" pointer-events="none"/>
+
+      <!-- living lights, drawn above the darkness -->
+      <g pointer-events="none">
+        <g class="light" id="light-anglerfish">
+          <circle class="halo" cx="355" cy="256" r="110" fill="url(#g-halo-yellow)"/>
+          <circle class="dot lure-glow" cx="355" cy="256" r="9" fill="#e8ff7a" filter="url(#softglow)"/>
+        </g>
+        <g class="light" id="light-atolla">
+          <circle class="halo" cx="540" cy="205" r="120" fill="url(#g-halo-blue)"/>
+          <g class="dot" fill="#6fb6ff" filter="url(#softglow)">
+            <circle cx="598" cy="212" r="3.5"/><circle cx="590.2" cy="217" r="3.5"/><circle cx="569" cy="220.7" r="3.5"/><circle cx="540" cy="222" r="3.5"/>
+            <circle cx="511" cy="220.7" r="3.5"/><circle cx="489.8" cy="217" r="3.5"/><circle cx="482" cy="212" r="3.5"/><circle cx="489.8" cy="207" r="3.5"/>
+            <circle cx="511" cy="203.3" r="3.5"/><circle cx="540" cy="202" r="3.5"/><circle cx="569" cy="203.3" r="3.5"/><circle cx="590.2" cy="207" r="3.5"/>
+          </g>
+        </g>
+        <g class="light" id="light-vampireSquid">
+          <circle class="halo" cx="790" cy="400" r="120" fill="url(#g-halo-aqua)"/>
+          <g class="dot" fill="#7dffe2" filter="url(#softglow)">
+            <circle cx="730" cy="450" r="4"/><circle cx="775" cy="455" r="4"/><circle cx="805" cy="455" r="4"/><circle cx="850" cy="450" r="4"/>
+            <circle cx="766" cy="324" r="3"/><circle cx="814" cy="324" r="3"/>
+          </g>
+        </g>
+        <g opacity=".9"><circle cx="846" cy="120" r="5" fill="#fff8c0" filter="url(#softglow)"/></g>
+      </g>
+    </svg>
+
+    <button class="btn primary nav-btn up" id="btnUp" type="button" hidden></button>
+    <button class="btn primary nav-btn down" id="btnDown" type="button" hidden></button>
+  </div>
+
+  <section class="caption" aria-live="polite">
+    <div class="prompt-row">
+      <p id="prompt"></p>
+      <div id="actions"></div>
+    </div>
+    <div class="fact" id="fact" hidden></div>
+  </section>
+</main>
+
+<dialog class="journal" id="journal">
+  <header>
+    <h2>📖 <span data-t="ui.journal"></span></h2>
+    <span class="sub" id="journalCount"></span>
+    <button class="btn" type="button" id="btnJournalClose" data-t="ui.close"></button>
+  </header>
+  <div id="journalBody"></div>
+</dialog>
+
+<div class="overlay" id="turtle" hidden role="dialog" aria-modal="true" aria-labelledby="turtleTitle">
+  <div class="game-box">
+    <canvas id="turtleCanvas" width="800" height="480" tabindex="0"></canvas>
+    <div class="game-panel" id="turtlePanel">
+      <h2 id="turtleTitle"></h2>
+      <p id="turtleText"></p>
+      <div class="row" id="turtleActions"></div>
+    </div>
+  </div>
+</div>
+
+<script src="deep-see-world.en.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Text ----------
+  const LANG = "en";
+  const M = window.__dswMessages[LANG];
+  function t(path, vars) {
+    const v = path.split(".").reduce((o, k) => (o ? o[k] : undefined), M);
+    if (typeof v !== "string") { console.warn("Missing message:", path); return path; }
+    return v.replace(/\{(\w+)\}/g, (_, k) => (vars && k in vars ? vars[k] : "{" + k + "}"));
+  }
+  const $ = (sel) => document.querySelector(sel);
+  document.querySelectorAll("[data-t]").forEach((el) => { el.textContent = t(el.dataset.t); });
+  document.querySelectorAll("[data-t-title]").forEach((el) => { el.title = t(el.dataset.tTitle); el.setAttribute("aria-label", el.title); });
+
+  // ---------- State ----------
+  const STORE = "deep-see-world:v1";
+  const ROOMS = ["reef", "twilight", "midnight"];
+  const DEPTH = { reef: 10, twilight: 500, midnight: 2000 };
+  const ARRIVAL_FACT = { reef: "sunlit", twilight: "twilight", midnight: "midnight" };
+  // Journal sections. Every fact in the dictionary must appear exactly once.
+  const FACT_ZONES = {
+    reef: ["sunlit", "coral", "reefLife", "anemone", "cleaner", "goby", "pistolSnap", "oxygen", "turtle"],
+    twilight: ["twilight", "migration", "lanternfish", "hatchetfish", "spermWhale"],
+    midnight: ["midnight", "pressure", "bioluminescence", "anglerfish", "atolla", "vampireSquid", "unexplored"],
+  };
+  const FACT_TOTAL = Object.keys(M.facts).length;
+
+  function fresh() { return { room: "reef", facts: [], solved: {}, pairs: [], muted: false }; }
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORE));
+      if (s && ROOMS.includes(s.room)) return Object.assign(fresh(), s);
+    } catch (e) { /* storage unavailable: start fresh */ }
+    return fresh();
+  }
+  function save() { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) { /* ignore */ } }
+  const state = load();
+
+  // ---------- Sound (synthesized, nothing downloaded) ----------
+  let actx = null;
+  function tone(freq, dur, type, vol, when, slideTo) {
+    if (state.muted) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
+      const t0 = actx.currentTime + (when || 0);
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = type || "sine";
+      o.frequency.setValueAtTime(freq, t0);
+      if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t0 + dur);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol || 0.1, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g).connect(actx.destination);
+      o.start(t0); o.stop(t0 + dur + 0.05);
+    } catch (e) { /* no audio */ }
+  }
+  const sfx = {
+    bubble: () => tone(320, 0.16, "sine", 0.08, 0, 900),
+    good: () => [523, 659, 784].forEach((f, i) => tone(f, 0.22, "triangle", 0.12, i * 0.11)),
+    bad: () => { tone(220, 0.2, "square", 0.04); tone(175, 0.25, "square", 0.04, 0.15); },
+    fact: () => { tone(880, 0.12, "sine", 0.07); tone(1320, 0.2, "sine", 0.05, 0.08); },
+    win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.32, "triangle", 0.12, i * 0.14)),
+    munch: () => tone(500, 0.1, "sine", 0.1, 0, 250),
+  };
+  const btnSound = $("#btnSound");
+  function renderSound() {
+    btnSound.textContent = state.muted ? "🔇" : "🔊";
+    btnSound.setAttribute("aria-pressed", String(!state.muted));
+    btnSound.title = t("ui.sound");
+    btnSound.setAttribute("aria-label", btnSound.title);
+  }
+  btnSound.addEventListener("click", () => { state.muted = !state.muted; save(); renderSound(); });
+  renderSound();
+
+  // ---------- Caption & facts ----------
+  const promptEl = $("#prompt"), actionsEl = $("#actions"), factEl = $("#fact");
+  function say(text, actions) {
+    promptEl.textContent = text;
+    actionsEl.replaceChildren();
+    (actions || []).forEach((a) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn" + (a.primary ? " primary" : "");
+      b.textContent = a.label;
+      b.addEventListener("click", a.onClick);
+      actionsEl.append(b);
+    });
+  }
+  function updateCount(pulse) {
+    const el = $("#factCount");
+    el.textContent = state.facts.length + "/" + FACT_TOTAL;
+    if (pulse) { el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
+  }
+  function showFact(id) {
+    const f = M.facts[id];
+    if (!f) return;
+    const isNew = !state.facts.includes(id);
+    if (isNew) { state.facts.push(id); save(); updateCount(true); sfx.fact(); }
+    const strong = document.createElement("strong");
+    if (isNew) {
+      const badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = t("ui.newFact");
+      strong.append(badge);
+    }
+    strong.append(f.title);
+    const p = document.createElement("p");
+    p.textContent = f.text;
+    factEl.replaceChildren(strong, p);
+    factEl.hidden = false;
+    factEl.style.animation = "none"; void factEl.offsetWidth; factEl.style.animation = "";
+  }
+
+  // ---------- Clickable things ----------
+  const hitEl = (id) => document.querySelector('.hit[data-id="' + id + '"]');
+  document.querySelectorAll(".hit").forEach((el) => {
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("role", "button");
+    el.addEventListener("click", () => activate(el));
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(el); }
+    });
+  });
+  function activate(el) {
+    sfx.bubble();
+    const handled = ROOM[state.room].hit(el.dataset.id, el);
+    if (!handled && el.dataset.fact) showFact(el.dataset.fact);
+  }
+  // Center of a clickable in its scene's coordinates (getCTM would include the screen scaling).
+  function sceneCenter(el, top) {
+    const b = el.getBBox(), x = b.x + b.width / 2, y = top ? b.y : b.y + b.height / 2;
+    const c = el.transform.baseVal.consolidate(), m = c ? c.matrix : new DOMMatrix();
+    return [m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f];
+  }
+  function heart(el) {
+    const [x, y] = sceneCenter(el, true);
+    const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    tx.setAttribute("x", x);
+    tx.setAttribute("y", y);
+    tx.setAttribute("text-anchor", "middle");
+    tx.setAttribute("class", "heart");
+    tx.textContent = "💛";
+    el.ownerSVGElement.append(tx);
+    setTimeout(() => tx.remove(), 1700);
+  }
+
+  // ---------- Room: coral reef (symbiosis pairs) ----------
+  const PARTNER = { clownfish: "anemone", anemone: "clownfish", shrimp: "eel", eel: "shrimp", pistol: "goby", goby: "pistol" };
+  const PAIR_FACT = { clownfish: "anemone", anemone: "anemone", shrimp: "cleaner", eel: "cleaner", pistol: "goby", goby: "goby" };
+  const MOVES = { clownfish: [-165, 125], shrimp: [72, -32], goby: [72, 4] };
+  let selected = null;
+  function select(id) {
+    clearSelection();
+    selected = id;
+    hitEl(id).classList.add("selected");
+  }
+  function clearSelection() {
+    if (selected) hitEl(selected).classList.remove("selected");
+    selected = null;
+  }
+  function applyPair(key, animate) {
+    Object.keys(PAIR_FACT).filter((id) => PAIR_FACT[id] === key).forEach((id) => {
+      const el = hitEl(id), mv = MOVES[id];
+      el.classList.add("paired");
+      if (!mv) return;
+      const mover = el.querySelector(".mover");
+      if (!animate) mover.style.transition = "none";
+      mover.style.transform = "translate(" + mv[0] + "px, " + mv[1] + "px)";
+      if (!animate) { void mover.getBoundingClientRect(); mover.style.transition = ""; }
+    });
+  }
+
+  // ---------- Room: twilight (daily vertical migration) ----------
+  const twSvg = $("#scene-twilight"), school = $("#school"), plankton = twSvg.querySelector(".plankton");
+  const ROUNDS = [{ sky: "night", ok: "up" }, { sky: "day", ok: "down" }];
+  let round = 0, twTimer = 0;
+  function setSky(s) { twSvg.classList.toggle("is-night", s === "night"); twSvg.classList.toggle("is-day", s === "day"); }
+  function setSchool(pos) { school.classList.toggle("up", pos === "up"); plankton.classList.toggle("eaten", pos === "up"); }
+  function migrationChoices() {
+    return [
+      { label: "⬆ " + t("twilight.up"), primary: true, onClick: () => answer("up") },
+      { label: "⬇ " + t("twilight.down"), primary: true, onClick: () => answer("down") },
+    ];
+  }
+  function askRound() { const r = ROUNDS[round]; setSky(r.sky); say(t("twilight." + r.sky), migrationChoices()); }
+  function answer(dir) {
+    const r = ROUNDS[round], Sky = r.sky === "night" ? "Night" : "Day";
+    if (dir !== r.ok) {
+      sfx.bad();
+      school.classList.remove("shake"); void school.getBBox(); school.classList.add("shake");
+      say(t("twilight.bad" + Sky), migrationChoices());
+      return;
+    }
+    setSchool(dir);
+    sfx.good();
+    say(t("twilight.good" + Sky));
+    twTimer = setTimeout(() => {
+      round++;
+      if (round < ROUNDS.length) return askRound();
+      state.solved.twilight = true; save();
+      sfx.win(); showFact("migration"); say(t("twilight.done")); updateNav();
+    }, 2800);
+  }
+
+  // ---------- Room: midnight (copy the light pattern) ----------
+  const mnSvg = $("#scene-midnight"), spot = $("#spot");
+  const GLOWERS = ["anglerfish", "atolla", "vampireSquid"];
+  const NOTE = { anglerfish: 392, atolla: 523.25, vampireSquid: 659.25 };
+  const LEVELS = [3, 4, 5];
+  const sm = { mode: "idle", level: 0, seq: [], pos: 0, timers: [] };
+  function later(fn, ms) { sm.timers.push(setTimeout(fn, ms)); }
+  function clearSimon() { sm.timers.forEach(clearTimeout); sm.timers = []; sm.mode = sm.mode === "done" ? "done" : "idle"; }
+  function flash(id, ms) {
+    ms = ms || 450;
+    const l = $("#light-" + id);
+    l.classList.add("flash");
+    tone(NOTE[id], ms / 1000, "sine", 0.14);
+    setTimeout(() => l.classList.remove("flash"), ms);
+  }
+  function newSeq(n) {
+    const s = [];
+    while (s.length < n) {
+      const c = GLOWERS[Math.floor(Math.random() * GLOWERS.length)];
+      if (s.length >= 2 && s[s.length - 1] === c && s[s.length - 2] === c) continue;
+      s.push(c);
+    }
+    return s;
+  }
+  function playback() {
+    sm.mode = "watch";
+    say(t("midnight.watch"));
+    sm.seq.forEach((id, i) => later(() => flash(id, 500), 700 + i * 750));
+    later(() => { sm.mode = "input"; sm.pos = 0; say(t("midnight.yourTurn")); }, 700 + sm.seq.length * 750);
+  }
+  function startSimon() {
+    clearSimon();
+    showFact("bioluminescence");
+    sm.level = 0;
+    sm.seq = newSeq(LEVELS[0]);
+    playback();
+  }
+  function finishSimon() {
+    sm.mode = "done";
+    state.solved.midnight = true; save();
+    later(() => {
+      GLOWERS.forEach((g, i) => later(() => flash(g, 1000), i * 220));
+      sfx.win();
+      showFact("unexplored");
+      say(t("midnight.done"), [
+        { label: t("ui.openJournal"), primary: true, onClick: openJournal },
+        { label: t("midnight.start"), onClick: startSimon },
+      ]);
+    }, 500);
+  }
+  function moveSpot(x, y) { spot.setAttribute("cx", x); spot.setAttribute("cy", y); }
+  mnSvg.addEventListener("pointermove", (e) => {
+    const m = mnSvg.getScreenCTM();
+    if (!m) return;
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    moveSpot(p.x, p.y);
+  });
+  mnSvg.addEventListener("pointerdown", (e) => {
+    const m = mnSvg.getScreenCTM();
+    if (!m) return;
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+    moveSpot(p.x, p.y);
+  });
+  mnSvg.querySelectorAll(".hit").forEach((el) => el.addEventListener("focus", () => moveSpot(...sceneCenter(el))));
+
+  // ---------- Room behavior ----------
+  const ROOM = {
+    reef: {
+      enter() {
+        if (state.solved.reef) say(t("reef.done"));
+        else say(t("reef.intro"));
+      },
+      leave() { clearSelection(); },
+      hit(id) {
+        if (id === "turtle") {
+          showFact("turtle");
+          say(t("turtle.offer"), [{ label: "🐢 " + t("turtle.play"), primary: true, onClick: () => turtleGame.open() }]);
+          return true;
+        }
+        if (!(id in PARTNER)) return false;
+        const key = PAIR_FACT[id];
+        if (state.pairs.includes(key)) {
+          showFact(id === "pistol" ? "pistolSnap" : key);
+          return true;
+        }
+        if (!selected || selected === id) {
+          select(id);
+          say(t("reef.clue." + id) + " " + t("reef.pick"));
+          return true;
+        }
+        if (PARTNER[selected] === id) {
+          clearSelection();
+          state.pairs.push(key); save();
+          applyPair(key, true);
+          sfx.good();
+          heart(hitEl(id));
+          showFact(key);
+          if (state.pairs.length === 3) {
+            state.solved.reef = true; save();
+            setTimeout(() => { sfx.win(); say(t("reef.done")); updateNav(); }, 700);
+          } else {
+            say(t("reef.match"));
+          }
+          return true;
+        }
+        clearSelection();
+        sfx.bad();
+        say(t("reef.wrong"));
+        return true;
+      },
+    },
+    twilight: {
+      enter() {
+        if (state.solved.twilight) { setSky("day"); setSchool("down"); say(t("twilight.done")); return; }
+        round = 0; setSky("night"); setSchool("down");
+        say(t("twilight.intro"), [{ label: t("ui.letsGo"), primary: true, onClick: askRound }]);
+      },
+      leave() { clearTimeout(twTimer); },
+      hit() { return false; },
+    },
+    midnight: {
+      enter() {
+        moveSpot(500, 320);
+        if (state.solved.midnight) {
+          sm.mode = "done";
+          say(t("midnight.done"), [{ label: t("midnight.start"), primary: true, onClick: startSimon }]);
+          return;
+        }
+        sm.mode = "idle";
+        say(t("midnight.intro"), [{ label: t("ui.letsGo"), primary: true, onClick: () => {
+          say(t("midnight.ready"), [{ label: "✨ " + t("midnight.start"), primary: true, onClick: startSimon }]);
+        } }]);
+      },
+      leave() { clearSimon(); },
+      hit(id) {
+        if (!GLOWERS.includes(id)) return false;
+        if (sm.mode === "watch") return true;
+        if (sm.mode !== "input") { flash(id); return false; }
+        flash(id, 350);
+        if (id !== sm.seq[sm.pos]) {
+          sm.mode = "watch";
+          sfx.bad();
+          say(t("midnight.wrong"));
+          later(playback, 1500);
+          return true;
+        }
+        sm.pos++;
+        if (sm.pos < sm.seq.length) return true;
+        sm.mode = "watch";
+        sm.level++;
+        if (sm.level >= LEVELS.length) { finishSimon(); return true; }
+        later(() => { sfx.good(); say(t("midnight.good")); }, 400);
+        sm.seq = newSeq(LEVELS[sm.level]);
+        later(playback, 1700);
+        return true;
+      },
+    },
+  };
+
+  // ---------- Navigation ----------
+  const stage = $("#stage"), btnUp = $("#btnUp"), btnDown = $("#btnDown");
+  btnUp.textContent = t("ui.swimUp");
+  btnDown.textContent = t("ui.diveDeeper");
+  function updateNav() {
+    const i = ROOMS.indexOf(state.room);
+    btnUp.hidden = i === 0;
+    btnDown.hidden = !(i < ROOMS.length - 1 && state.solved[state.room]);
+  }
+  function renderZone() {
+    const i = ROOMS.indexOf(state.room);
+    $("#zoneText").textContent = t("zones." + state.room) + " · " + t("ui.depth", { meters: DEPTH[state.room].toLocaleString(LANG) });
+    document.querySelectorAll(".zone-bar span").forEach((s, j) => {
+      s.classList.toggle("on", j === i);
+      s.classList.toggle("done", j < i);
+    });
+  }
+  function showRoom(room) {
+    document.querySelectorAll(".scene").forEach((s) => s.classList.toggle("active", s.id === "scene-" + room));
+    state.room = room; save();
+    renderZone(); updateNav();
+    factEl.hidden = true;
+    ROOM[room].enter();
+    if (!state.facts.includes(ARRIVAL_FACT[room])) showFact(ARRIVAL_FACT[room]);
+  }
+  function goTo(room) {
+    if (room === state.room) return;
+    ROOM[state.room].leave();
+    stage.classList.add("diving");
+    const goingUp = ROOMS.indexOf(room) < ROOMS.indexOf(state.room);
+    tone(600, 0.6, "sine", 0.06, 0, goingUp ? 1200 : 200);
+    setTimeout(() => { showRoom(room); stage.classList.remove("diving"); }, 450);
+  }
+  btnDown.addEventListener("click", () => goTo(ROOMS[ROOMS.indexOf(state.room) + 1]));
+  btnUp.addEventListener("click", () => goTo(ROOMS[ROOMS.indexOf(state.room) - 1]));
+
+  // ---------- Journal ----------
+  const journal = $("#journal");
+  function openJournal() {
+    const body = $("#journalBody");
+    body.replaceChildren();
+    ROOMS.forEach((room) => {
+      const sec = document.createElement("section");
+      const h = document.createElement("h3");
+      h.textContent = t("zones." + room);
+      const cards = document.createElement("div");
+      cards.className = "cards";
+      FACT_ZONES[room].forEach((id) => {
+        const found = state.facts.includes(id);
+        const card = document.createElement("div");
+        card.className = "card z-" + room + (found ? "" : " locked");
+        const b = document.createElement("b");
+        const p = document.createElement("p");
+        b.textContent = found ? M.facts[id].title : "?";
+        p.textContent = found ? M.facts[id].text : t("ui.journalLocked");
+        card.append(b, p);
+        cards.append(card);
+      });
+      sec.append(h, cards);
+      body.append(sec);
+    });
+    $("#journalCount").textContent = t("ui.journalCount", { found: state.facts.length, total: FACT_TOTAL });
+    journal.showModal();
+  }
+  $("#btnJournal").addEventListener("click", openJournal);
+  $("#btnJournalClose").addEventListener("click", () => journal.close());
+  journal.addEventListener("click", (e) => { if (e.target === journal) journal.close(); });
+
+  $("#btnRestart").addEventListener("click", () => {
+    if (!confirm(t("ui.restartConfirm"))) return;
+    try { localStorage.removeItem(STORE); } catch (e) { /* ignore */ }
+    location.reload();
+  });
+
+  // ---------- Mini-game: Turtle Lunch ----------
+  const turtleGame = (() => {
+    const ov = $("#turtle"), cv = $("#turtleCanvas"), ctx = cv.getContext("2d");
+    const panel = $("#turtlePanel");
+    const W = 800, H = 480, TY = H - 95, GOAL = 10;
+    let g = null, raf = 0, last = 0;
+    const keys = {};
+
+    function panelShow(title, text, actions) {
+      $("#turtleTitle").textContent = title;
+      $("#turtleText").textContent = text;
+      const row = $("#turtleActions");
+      row.replaceChildren();
+      actions.forEach((a) => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "btn" + (a.primary ? " primary" : "");
+        b.textContent = a.label; b.addEventListener("click", a.onClick);
+        row.append(b);
+      });
+      panel.hidden = false;
+      row.firstChild.focus();
+    }
+    function newGame() { return { x: W / 2, tx: W / 2, face: -1, score: 0, lives: 3, items: [], pops: [], spawn: 0.4, time: 0, ouch: 0, over: false }; }
+    function open() {
+      ov.hidden = false;
+      g = newGame(); g.over = true;
+      draw();
+      panelShow(t("turtle.title"), t("turtle.howTo"), [
+        { label: t("turtle.go"), primary: true, onClick: start },
+        { label: t("turtle.back"), onClick: close },
+      ]);
+    }
+    function close() {
+      cancelAnimationFrame(raf);
+      ov.hidden = true;
+      if (g) g.over = true;
+      if (state.room === "reef") ROOM.reef.enter();
+    }
+    function start() {
+      panel.hidden = true;
+      g = newGame();
+      last = performance.now();
+      cv.focus();
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(loop);
+    }
+    function end(win) {
+      g.over = true;
+      if (win) { sfx.win(); showFact("turtle"); } else sfx.bad();
+      setTimeout(() => panelShow(win ? "🐢💛" : "🛍️", t(win ? "turtle.win" : "turtle.lose"), [
+        { label: t("turtle.again"), primary: true, onClick: start },
+        { label: t("turtle.back"), onClick: close },
+      ]), 400);
+    }
+    function loop(now) {
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      update(dt);
+      draw();
+      if (!g.over) raf = requestAnimationFrame(loop);
+    }
+    function update(dt) {
+      g.time += dt;
+      if (keys.ArrowLeft) g.tx = Math.max(50, g.tx - 480 * dt);
+      if (keys.ArrowRight) g.tx = Math.min(W - 50, g.tx + 480 * dt);
+      const dx = g.tx - g.x;
+      g.x += dx * Math.min(1, dt * 9);
+      if (Math.abs(dx) > 2) g.face = dx > 0 ? 1 : -1;
+
+      g.spawn -= dt;
+      if (g.spawn <= 0) {
+        const bagChance = 0.3 + Math.min(0.15, g.time * 0.004);
+        g.items.push({
+          type: Math.random() < bagChance ? "bag" : "jelly",
+          x: 60 + Math.random() * (W - 120), y: -40,
+          vy: 55 + Math.random() * 35 + g.time * 1.2, ph: Math.random() * 6.28,
+        });
+        g.spawn = Math.max(0.55, 1.1 - g.time * 0.01);
+      }
+      const mx = g.x + g.face * 34, my = TY - 4;
+      g.items = g.items.filter((it) => {
+        it.y += it.vy * dt; it.ph += dt * 2; it.x += Math.sin(it.ph) * 22 * dt;
+        if (it.y > H + 50) return false;
+        if (Math.hypot(it.x - mx, it.y - my) < 44) {
+          if (it.type === "jelly") { g.score++; sfx.munch(); g.pops.push({ x: it.x, y: it.y, life: 0.6 }); }
+          else { g.lives--; g.ouch = 1.2; sfx.bad(); }
+          return false;
+        }
+        return true;
+      });
+      g.pops = g.pops.filter((p) => (p.life -= dt) > 0);
+      g.ouch = Math.max(0, g.ouch - dt);
+      if (g.score >= GOAL) end(true);
+      else if (g.lives <= 0) end(false);
+    }
+
+    function drawBackground() {
+      const grd = ctx.createLinearGradient(0, 0, 0, H);
+      grd.addColorStop(0, "#5fe0f0"); grd.addColorStop(0.6, "#1c8fc4"); grd.addColorStop(1, "#0f5d91");
+      ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      [[100, 60], [330, 40], [560, 70]].forEach(([x, w]) => {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + w, 0); ctx.lineTo(x + w + 160, H); ctx.lineTo(x + 100, H); ctx.fill();
+      });
+      ctx.fillStyle = "#e8cf8f";
+      ctx.beginPath(); ctx.moveTo(0, H - 30);
+      ctx.quadraticCurveTo(W / 2, H - 55, W, H - 25); ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.fill();
+    }
+    function drawJelly(it) {
+      ctx.save(); ctx.translate(it.x, it.y);
+      ctx.strokeStyle = "rgba(255,190,235,0.8)"; ctx.lineWidth = 2;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.moveTo(i * 7, 4);
+        for (let k = 1; k <= 4; k++) ctx.lineTo(i * 7 + Math.sin(it.ph * 2 + k + i) * 4, 4 + k * 8);
+        ctx.stroke();
+      }
+      const squish = 1 + Math.sin(it.ph * 3) * 0.06;
+      ctx.scale(squish, 2 - squish);
+      ctx.fillStyle = "rgba(255,140,215,0.85)";
+      ctx.beginPath(); ctx.arc(0, 4, 22, Math.PI, 0); ctx.quadraticCurveTo(0, 12, -22, 4); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.beginPath(); ctx.ellipse(-8, -6, 6, 4, -0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    function drawBag(it) {
+      ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(Math.sin(it.ph) * 0.25);
+      ctx.fillStyle = "rgba(245,248,252,0.8)"; ctx.strokeStyle = "rgba(170,185,200,0.95)"; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-18, -8); ctx.lineTo(18, -8); ctx.lineTo(22, 26); ctx.quadraticCurveTo(0, 32, -22, 26); ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-9, -8, 7, Math.PI, 0); ctx.stroke();
+      ctx.beginPath(); ctx.arc(9, -8, 7, Math.PI, 0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-8, 4); ctx.lineTo(-3, 18); ctx.moveTo(6, 2); ctx.lineTo(10, 20); ctx.stroke();
+      ctx.restore();
+    }
+    function drawTurtle() {
+      const flap = Math.sin(g.time * 7) * 0.35;
+      ctx.save(); ctx.translate(g.x, TY); ctx.scale(g.face, 1);
+      ctx.fillStyle = "#2a3746";
+      ctx.save(); ctx.translate(14, -8); ctx.rotate(-0.4 + flap);
+      ctx.beginPath(); ctx.ellipse(-20, -14, 30, 8, -0.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      ctx.fillStyle = "#3b4a5a";
+      ctx.beginPath(); ctx.ellipse(-48, 10, 14, 5, 0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#2f3e4e";
+      ctx.beginPath(); ctx.ellipse(0, 0, 48, 24, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#4c5f73"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(-44, 0); ctx.lineTo(42, 0);
+      ctx.moveTo(-40, -11); ctx.quadraticCurveTo(0, -20, 40, -9);
+      ctx.moveTo(-40, 11); ctx.quadraticCurveTo(0, 20, 40, 9); ctx.stroke();
+      ctx.fillStyle = "#3b4a5a";
+      ctx.beginPath(); ctx.arc(54, -4, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#111"; ctx.beginPath(); ctx.arc(60, -8, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#3b4a5a";
+      ctx.save(); ctx.translate(14, 8); ctx.rotate(0.4 - flap);
+      ctx.beginPath(); ctx.ellipse(-22, 14, 32, 8, 0.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      if (g.ouch > 0) { ctx.fillStyle = "rgba(255,80,80," + (g.ouch / 2.4) + ")"; ctx.beginPath(); ctx.ellipse(0, 0, 60, 32, 0, 0, Math.PI * 2); ctx.fill(); }
+      ctx.restore();
+    }
+    function draw() {
+      drawBackground();
+      g.items.forEach((it) => (it.type === "jelly" ? drawJelly(it) : drawBag(it)));
+      g.pops.forEach((p) => {
+        ctx.fillStyle = "rgba(255,255,255," + p.life + ")";
+        for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(p.x + Math.cos(i * 1.3) * (1 - p.life) * 50, p.y - (1 - p.life) * 40 + i * 4, 3, 0, Math.PI * 2); ctx.fill(); }
+      });
+      drawTurtle();
+      ctx.font = "26px " + getComputedStyle(document.body).fontFamily;
+      ctx.textBaseline = "top";
+      ctx.textAlign = "left";
+      ctx.fillText("❤️".repeat(Math.max(0, g.lives)) + "🤍".repeat(3 - Math.max(0, g.lives)), 16, 14);
+      ctx.textAlign = "right"; ctx.fillStyle = "#fff";
+      ctx.fillText(t("turtle.score", { score: g.score, goal: GOAL }), W - 16, 16);
+      if (g.ouch > 0) {
+        ctx.textAlign = "center"; ctx.fillStyle = "rgba(255,255,255," + Math.min(1, g.ouch) + ")";
+        ctx.font = "bold 34px " + getComputedStyle(document.body).fontFamily;
+        ctx.fillText(t("turtle.ouch"), W / 2, H / 2 - 60);
+      }
+    }
+
+    function aim(e) {
+      const r = cv.getBoundingClientRect();
+      if (g) g.tx = Math.max(50, Math.min(W - 50, ((e.clientX - r.left) / r.width) * W));
+    }
+    cv.addEventListener("pointermove", aim);
+    cv.addEventListener("pointerdown", aim);
+    window.addEventListener("keydown", (e) => {
+      if (ov.hidden) return;
+      if (e.key === "Escape") { close(); return; }
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") { keys[e.key] = true; e.preventDefault(); }
+    });
+    window.addEventListener("keyup", (e) => { keys[e.key] = false; });
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) cancelAnimationFrame(raf);
+      else if (g && !g.over && !ov.hidden) { last = performance.now(); raf = requestAnimationFrame(loop); }
+    });
+    return { open };
+  })();
+
+  // ---------- Start ----------
+  state.pairs.forEach((key) => applyPair(key, false));
+  updateCount(false);
+  // Testing shortcut: index.html#midnight opens that room directly.
+  const hashRoom = location.hash.slice(1);
+  showRoom(ROOMS.includes(hashRoom) ? hashRoom : state.room);
+})();
+</script>
+</body>
+</html>
