@@ -8,6 +8,15 @@ goes into your **Sea Journal**.
 Everything runs in the browser. No server, no downloads, no external libraries or fonts. The
 art is hand-drawn SVG and the sounds are made on the fly with the Web Audio API.
 
+**Read aloud.** A voice reads every instruction, clue, and fact, with each word highlighted as it's
+spoken. It's on by default (switch it with 🗣️ in the top bar), and 🔈 buttons replay any text. It
+uses the browser's built-in speech with **on-device voices only**, so no text is sent anywhere. Voice
+quality depends on the device. If no voice is available, the read-aloud buttons hide themselves.
+
+**Where am I?** Arriving in a zone opens a card with a map of the ocean's layers and a "You are here"
+marker, plus the light, temperature, and water pressure at that depth and a "Did you know?" fact.
+Click the zone name in the top bar to open it again.
+
 ## Play
 
 Open `index.html` in a browser. That's it.
@@ -21,7 +30,7 @@ Open `index.html` in a browser. That's it.
 | 🌒 Twilight Zone | 500 m | **The daily trip.** Decide where the lanternfish go at night and by day. | Diel vertical migration, the biggest migration on Earth |
 | 🌑 Midnight Zone | 2,000 m | **Talk in light.** Watch glowing animals flash, then repeat the pattern. | Bioluminescence: anglerfish, Atolla jellyfish, vampire squid |
 
-There are 21 facts to collect. Progress is saved in the browser (localStorage).
+There are 24 facts to collect. Progress is saved in the browser (localStorage).
 
 ## Files
 
@@ -43,7 +52,9 @@ label. If Google Chrome is installed, it also loads each room headless and runs 
 that solves every puzzle (including some deliberate wrong answers), failing on any JavaScript error.
 Set `DSW_SHOTS=/some/folder` to keep screenshots of each room.
 
-Developer shortcut: `index.html#twilight` or `index.html#midnight` jumps straight to a room.
+Developer shortcut: `index.html#reef`, `#twilight`, or `#midnight` skips the welcome screen and jumps
+straight to a room. The playthrough checks narration with a stand-in voice, since headless Chrome
+can't speak. Try the real voices by hand in Safari and Chrome.
 
 ## Accuracy
 

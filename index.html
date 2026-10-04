@@ -175,7 +175,66 @@
   .game-panel p { margin: 0 auto; max-width: 46ch; font-size: 1.1rem; line-height: 1.45; }
   .game-panel .row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
+  /* Read aloud */
+  .listen {
+    border: 0; background: #ffffff18; color: var(--ink); border-radius: 999px; cursor: pointer;
+    width: 36px; height: 36px; flex: none; font-size: 1rem; line-height: 1;
+  }
+  .listen:hover { background: #ffffff30; }
+  .listen:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  body.no-speech .listen, body.no-speech #btnNarration { display: none; }
+  .w { border-radius: 4px; transition: background .1s; }
+  .w.speaking { background: #ffd23f66; box-shadow: 0 0 0 2px #ffd23f66; }
+  .fact { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; }
+  .zone { background: none; border: 0; font: inherit; cursor: pointer; padding: 6px 10px; border-radius: 999px; }
+  .zone:hover { background: #ffffff14; color: var(--ink); }
+  .zone:focus-visible { outline: 3px solid var(--accent); }
+  .card { position: relative; }
+  .card .listen { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; font-size: .85rem; }
+  .card b { padding-right: 34px; }
+
+  /* Welcome screen */
+  .welcome {
+    position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; text-align: center;
+    background: radial-gradient(ellipse at 50% 0%, #2a9fd0, #0b3b66 45%, #020a18); overflow: hidden;
+  }
+  .welcome-inner { position: relative; max-width: 580px; display: grid; gap: 18px; justify-items: center; }
+  .welcome h1 { margin: 0; font-size: clamp(2.4rem, 9vw, 4.2rem); line-height: 1.05; }
+  .welcome h1 .see { color: var(--accent); }
+  .welcome .mascot { font-size: 3.6rem; animation: bob 3s ease-in-out infinite; }
+  .welcome p { margin: 0; font-size: 1.15rem; line-height: 1.5; }
+  .welcome .hint { color: var(--ink-soft); font-size: .95rem; }
+  .welcome .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .welcome .bubbles span {
+    position: absolute; bottom: -40px; border-radius: 50%; border: 2px solid #ffffff55; background: #ffffff14;
+    animation: rise-far linear infinite;
+  }
+  @keyframes rise-far { from { transform: translateY(0); } to { transform: translateY(-115vh); } }
+  .btn.big { font-size: 1.25rem; padding: 14px 30px; }
+
+  /* Where am I? card */
+  dialog.zonecard {
+    width: min(780px, calc(100% - 32px)); max-height: calc(100svh - 32px);
+    border: 0; border-radius: 18px; padding: 22px; background: var(--panel); color: var(--ink);
+  }
+  dialog.zonecard::backdrop { background: #000a; }
+  .zc-grid { display: grid; grid-template-columns: 170px 1fr; gap: 22px; align-items: start; }
+  .zc-map { width: 100%; height: auto; border-radius: 12px; }
+  .zc-map text { font-family: var(--font); }
+  .zc-ping { animation: ping 1.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes ping { from { transform: scale(.6); opacity: .9; } to { transform: scale(2.2); opacity: 0; } }
+  .zc-title { margin: 0 0 2px; font-size: 1.5rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+  .zc-where { margin: 0 0 14px; color: var(--ink-soft); font-size: 1.05rem; }
+  .zc-stats { display: grid; gap: 8px; margin-bottom: 14px; }
+  .zc-stat { display: grid; grid-template-columns: 32px 1fr; gap: 8px; align-items: center; background: #ffffff0d; border-radius: 10px; padding: 8px 12px; }
+  .zc-stat .ico { font-size: 1.35rem; text-align: center; }
+  .zc-stat b { display: block; font-size: .78rem; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .06em; }
+  .zc-desc { margin: 0 0 12px; line-height: 1.5; font-size: 1.05rem; }
+  .zc-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+
   @media (max-width: 600px) {
+    .zc-grid { grid-template-columns: 1fr; }
+    .zc-map { max-width: 140px; justify-self: center; }
     .topbar h1 { font-size: 1.1rem; }
     .label { display: none; }
     #prompt { font-size: 1rem; }
@@ -255,11 +314,12 @@
 
 <header class="topbar">
   <h1><span aria-hidden="true">👁️‍🗨️</span><span>Deep <span class="see">See</span> World</span></h1>
-  <div class="zone" aria-live="polite">
-    <div class="zone-bar" aria-hidden="true"><span data-room="reef"></span><span data-room="twilight"></span><span data-room="midnight"></span></div>
+  <button class="zone" id="btnWhere" type="button" data-t-title="ui.whereAmI">
+    <span class="zone-bar" aria-hidden="true"><span data-room="reef"></span><span data-room="twilight"></span><span data-room="midnight"></span></span>
     <span id="zoneText"></span>
-  </div>
+  </button>
   <button class="btn" id="btnJournal" type="button">📖 <span class="label" data-t="ui.journal"></span><span class="count" id="factCount">0/0</span></button>
+  <button class="btn icon-btn" id="btnNarration" type="button" aria-pressed="true">🗣️</button>
   <button class="btn icon-btn" id="btnSound" type="button" aria-pressed="true">🔊</button>
   <button class="btn icon-btn" id="btnRestart" type="button" data-t-title="ui.restart">↺</button>
 </header>
@@ -592,6 +652,7 @@
 
   <section class="caption" aria-live="polite">
     <div class="prompt-row">
+      <button class="listen" id="listenPrompt" type="button" data-t-title="ui.listen">🔈</button>
       <p id="prompt"></p>
       <div id="actions"></div>
     </div>
@@ -607,6 +668,69 @@
   </header>
   <div id="journalBody"></div>
 </dialog>
+
+<dialog class="zonecard" id="zoneCard" aria-labelledby="zcTitle">
+  <div class="zc-grid">
+    <svg class="zc-map" viewBox="0 0 170 330" aria-hidden="true">
+      <rect width="170" height="16" fill="#a8e1ff"/>
+      <circle cx="148" cy="8" r="6" fill="#ffd23f"/>
+      <rect y="16" width="170" height="80" fill="#4fc6e4"/>
+      <rect y="96" width="170" height="80" fill="#245a9a"/>
+      <rect y="176" width="170" height="80" fill="#0b1633"/>
+      <rect y="256" width="170" height="74" fill="#03060f"/>
+      <path d="M0 16 Q21 12 42 16 T85 16 T127 16 T170 16" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="2"/>
+      <g font-size="11" font-weight="700">
+        <text x="8" y="34" fill="#053049" data-t="zones.reef"></text>
+        <text x="8" y="114" fill="#dbe8ff" data-t="zones.twilight"></text>
+        <text x="8" y="194" fill="#c7d2ec" data-t="zones.midnight"></text>
+        <text x="8" y="274" fill="#7d879c" data-t="zoneCard.deeper"></text>
+      </g>
+      <g font-size="9" fill-opacity=".75">
+        <text x="8" y="91" fill="#053049">200 m</text>
+        <text x="8" y="171" fill="#dbe8ff">1,000 m</text>
+        <text x="8" y="251" fill="#c7d2ec">4,000 m</text>
+      </g>
+      <g id="zcMarker" transform="translate(122,26)">
+        <circle class="zc-ping" r="7" fill="#ffd23f"/>
+        <circle r="6" fill="#ffd23f" stroke="#2a1d00" stroke-width="2"/>
+        <text y="22" text-anchor="middle" font-size="9" font-weight="700" fill="#ffd23f" stroke="#0008" stroke-width="2.5" paint-order="stroke" data-t="zoneCard.here"></text>
+      </g>
+    </svg>
+    <div>
+      <h2 class="zc-title"><span id="zcTitle"></span><button class="listen" id="listenZone" type="button" data-t-title="ui.listen">🔈</button></h2>
+      <p class="zc-where" id="zcWhere"></p>
+      <div class="zc-stats">
+        <div class="zc-stat"><span class="ico" id="zcLightIco">☀️</span><div><b data-t="zoneCard.light"></b><span id="zc-light"></span></div></div>
+        <div class="zc-stat"><span class="ico">🌡️</span><div><b data-t="zoneCard.temperature"></b><span id="zc-temperature"></span></div></div>
+        <div class="zc-stat"><span class="ico">⚖️</span><div><b data-t="zoneCard.pressure"></b><span id="zc-pressure"></span></div></div>
+      </div>
+      <p class="zc-desc" id="zcDesc"></p>
+      <div class="fact"><div><strong data-t="zoneCard.didYouKnow"></strong><p id="zcDyk"></p></div></div>
+      <div class="zc-actions"><button class="btn primary big" id="zcExplore" type="button" data-t="zoneCard.explore"></button></div>
+    </div>
+  </div>
+</dialog>
+
+<div class="welcome" id="welcome" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
+  <div class="bubbles" aria-hidden="true">
+    <span style="left:8%;width:18px;height:18px;animation-duration:11s"></span>
+    <span style="left:22%;width:10px;height:10px;animation-duration:8s;animation-delay:-3s"></span>
+    <span style="left:41%;width:24px;height:24px;animation-duration:14s;animation-delay:-6s"></span>
+    <span style="left:63%;width:12px;height:12px;animation-duration:9s;animation-delay:-1s"></span>
+    <span style="left:78%;width:20px;height:20px;animation-duration:12s;animation-delay:-8s"></span>
+    <span style="left:91%;width:9px;height:9px;animation-duration:7s;animation-delay:-4s"></span>
+  </div>
+  <div class="welcome-inner">
+    <div class="mascot" aria-hidden="true">🐋</div>
+    <h1 id="welcomeTitle">Deep <span class="see">See</span> World</h1>
+    <p data-t="welcome.tagline"></p>
+    <div class="row">
+      <button class="btn primary big" id="btnStart" type="button"></button>
+      <button class="btn" id="btnStartOver" type="button" data-t="welcome.restart" hidden></button>
+    </div>
+    <p class="hint" data-t="welcome.hint"></p>
+  </div>
+</div>
 
 <div class="overlay" id="turtle" hidden role="dialog" aria-modal="true" aria-labelledby="turtleTitle">
   <div class="game-box">
@@ -643,13 +767,14 @@
   const ARRIVAL_FACT = { reef: "sunlit", twilight: "twilight", midnight: "midnight" };
   // Journal sections. Every fact in the dictionary must appear exactly once.
   const FACT_ZONES = {
-    reef: ["sunlit", "coral", "reefLife", "anemone", "cleaner", "goby", "pistolSnap", "oxygen", "turtle"],
-    twilight: ["twilight", "migration", "lanternfish", "hatchetfish", "spermWhale"],
-    midnight: ["midnight", "pressure", "bioluminescence", "anglerfish", "atolla", "vampireSquid", "unexplored"],
+    reef: ["sunlit", "redLight", "coral", "reefLife", "anemone", "cleaner", "goby", "pistolSnap", "oxygen", "turtle"],
+    twilight: ["twilight", "redAnimals", "migration", "lanternfish", "hatchetfish", "spermWhale"],
+    midnight: ["midnight", "bigMouths", "pressure", "bioluminescence", "anglerfish", "atolla", "vampireSquid", "unexplored"],
   };
   const FACT_TOTAL = Object.keys(M.facts).length;
+  const DID_YOU_KNOW = { reef: "redLight", twilight: "redAnimals", midnight: "bigMouths" };
 
-  function fresh() { return { room: "reef", facts: [], solved: {}, pairs: [], muted: false }; }
+  function fresh() { return { room: "reef", facts: [], solved: {}, pairs: [], muted: false, narration: true }; }
   function load() {
     try {
       const s = JSON.parse(localStorage.getItem(STORE));
@@ -697,10 +822,124 @@
   btnSound.addEventListener("click", () => { state.muted = !state.muted; save(); renderSound(); });
   renderSound();
 
+  // ---------- Read aloud ----------
+  // Uses only the voices installed on the device (localService), so no text ever leaves the browser.
+  const narrator = (() => {
+    const NOVELTY = /Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Ralph|Kathy|Grandma|Grandpa|Eddy|Flo|Reed|Rocko|Sandy|Shelley/;
+    const FAVORITE = /Samantha|Ava|Allison|Susan|Karen|Moira|Tessa|Serena|Daniel|Zira|Aria|Jenny|Libby|Sonia/;
+    const synth = () => window.speechSynthesis;
+    let voice = null, pending = [], flushTimer = 0, lit = null, ready = false;
+    function pickVoice() {
+      const s = synth();
+      const local = s ? s.getVoices().filter((v) => v.localService && /^en([-_]|$)/i.test(v.lang) && !NOVELTY.test(v.name)) : [];
+      const score = (v) => (/Enhanced|Premium|Natural/.test(v.name) ? 4 : 0) + (FAVORITE.test(v.name) ? 2 : 0) +
+        (/^en[-_]US$/i.test(v.lang) ? 1 : 0) + (v.default ? 0.5 : 0);
+      voice = local.sort((a, b) => score(b) - score(a))[0] || null;
+      document.body.classList.toggle("no-speech", !voice);
+    }
+    function unlight() { if (lit) lit.classList.remove("speaking"); lit = null; }
+    function stop() {
+      clearTimeout(flushTimer);
+      pending = [];
+      if (synth()) synth().cancel();
+      unlight();
+    }
+    // segs: [{ text, marks? }] where marks map character offsets in text to word spans to highlight.
+    function speakNow(segs) {
+      stop();
+      if (!voice) pickVoice();
+      if (!voice) return;
+      segs.forEach((seg) => {
+        if (!seg || !seg.text) return;
+        const u = new SpeechSynthesisUtterance(seg.text);
+        try { u.voice = voice; } catch (e) { /* non-native voice object */ }
+        u.lang = voice.lang; u.rate = 0.92; u.pitch = 1.05;
+        if (seg.marks) {
+          u.onboundary = (e) => {
+            if (e.name && e.name !== "word") return;
+            let m = null;
+            for (const k of seg.marks) { if (k.start <= e.charIndex) m = k; else break; }
+            unlight();
+            if (m) { lit = m.span; lit.classList.add("speaking"); }
+          };
+          u.onend = u.onerror = unlight;
+        }
+        synth().speak(u);
+      });
+    }
+    // Automatic narration: everything added in the same moment is read in order.
+    function add(seg) {
+      if (!ready || !state.narration || !seg) return;
+      pending.push(seg);
+      clearTimeout(flushTimer);
+      flushTimer = setTimeout(() => speakNow(pending.slice()), 0);
+    }
+    if (synth()) synth().onvoiceschanged = pickVoice;
+    pickVoice();
+    return { add, speakNow, stop, refresh: pickVoice, start() { ready = true; pickVoice(); } };
+  })();
+
+  // Wrap each word in a span and build the text the voice reads, so spoken words can be highlighted.
+  function spokenWord(word, prev) {
+    let w = word.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}←→↑↓⬆⬇“”]/gu, "")
+      .replace(/°C/g, "degrees Celsius").replace(/(\d)–(\d)/g, "$1 to $2").replace(/…/g, ".");
+    if (/^m[.,!?]?$/.test(w) && /\d$/.test(prev)) w = w.replace("m", "meters");
+    return w.trim();
+  }
+  function renderSpeakable(el, text) {
+    el.replaceChildren();
+    const marks = [];
+    let out = "", prev = "";
+    text.split(/(\s+)/).forEach((tok) => {
+      if (!tok) return;
+      if (/^\s+$/.test(tok)) { el.append(tok); return; }
+      const span = document.createElement("span");
+      span.className = "w";
+      span.textContent = tok;
+      el.append(span);
+      const sp = spokenWord(tok, prev);
+      prev = tok;
+      if (!sp) return;
+      if (out) out += " ";
+      marks.push({ start: out.length, span });
+      out += sp;
+    });
+    return { text: out, marks };
+  }
+  function withLabel(label, seg) {
+    const shift = label.length + 2;
+    return { text: label + ": " + seg.text, marks: seg.marks.map((m) => ({ start: m.start + shift, span: m.span })) };
+  }
+  function listenButton(getSegs) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "listen";
+    b.textContent = "🔈";
+    b.title = t("ui.listen");
+    b.setAttribute("aria-label", b.title);
+    b.addEventListener("click", () => narrator.speakNow(getSegs()));
+    return b;
+  }
+  const btnNarration = $("#btnNarration");
+  function renderNarration() {
+    btnNarration.textContent = state.narration ? "🗣️" : "🤫";
+    btnNarration.setAttribute("aria-pressed", String(state.narration));
+    btnNarration.title = t("ui.narration");
+    btnNarration.setAttribute("aria-label", btnNarration.title);
+  }
+  btnNarration.addEventListener("click", () => {
+    state.narration = !state.narration; save(); renderNarration();
+    if (state.narration) narrator.speakNow([promptSeg]); else narrator.stop();
+  });
+  renderNarration();
+
   // ---------- Caption & facts ----------
   const promptEl = $("#prompt"), actionsEl = $("#actions"), factEl = $("#fact");
+  let promptSeg = null, factSegs = [];
+  $("#listenPrompt").addEventListener("click", () => narrator.speakNow([promptSeg]));
   function say(text, actions) {
-    promptEl.textContent = text;
+    promptSeg = renderSpeakable(promptEl, text);
+    narrator.add(promptSeg);
     actionsEl.replaceChildren();
     (actions || []).forEach((a) => {
       const b = document.createElement("button");
@@ -716,11 +955,15 @@
     el.textContent = state.facts.length + "/" + FACT_TOTAL;
     if (pulse) { el.classList.remove("pulse"); void el.offsetWidth; el.classList.add("pulse"); }
   }
+  function earnFact(id) {
+    if (state.facts.includes(id)) return false;
+    state.facts.push(id); save(); updateCount(true); sfx.fact();
+    return true;
+  }
   function showFact(id) {
     const f = M.facts[id];
     if (!f) return;
-    const isNew = !state.facts.includes(id);
-    if (isNew) { state.facts.push(id); save(); updateCount(true); sfx.fact(); }
+    const isNew = earnFact(id);
     const strong = document.createElement("strong");
     if (isNew) {
       const badge = document.createElement("span");
@@ -728,12 +971,16 @@
       badge.textContent = t("ui.newFact");
       strong.append(badge);
     }
-    strong.append(f.title);
+    const title = document.createElement("span");
+    strong.append(title);
     const p = document.createElement("p");
-    p.textContent = f.text;
-    factEl.replaceChildren(strong, p);
+    factSegs = [renderSpeakable(title, f.title), renderSpeakable(p, f.text)];
+    const body = document.createElement("div");
+    body.append(strong, p);
+    factEl.replaceChildren(body, listenButton(() => factSegs));
     factEl.hidden = false;
     factEl.style.animation = "none"; void factEl.offsetWidth; factEl.style.animation = "";
+    factSegs.forEach(narrator.add);
   }
 
   // ---------- Clickable things ----------
@@ -1009,7 +1256,7 @@
     renderZone(); updateNav();
     factEl.hidden = true;
     ROOM[room].enter();
-    if (!state.facts.includes(ARRIVAL_FACT[room])) showFact(ARRIVAL_FACT[room]);
+    if (welcome.hidden) openZoneCard(room);
   }
   function goTo(room) {
     if (room === state.room) return;
@@ -1021,6 +1268,36 @@
   }
   btnDown.addEventListener("click", () => goTo(ROOMS[ROOMS.indexOf(state.room) + 1]));
   btnUp.addEventListener("click", () => goTo(ROOMS[ROOMS.indexOf(state.room) - 1]));
+
+  // ---------- Where am I? ----------
+  const zoneCard = $("#zoneCard");
+  const MARKER_Y = { reef: 26, twilight: 126, midnight: 203 };  // depth on the map's zone bands
+  const LIGHT_ICON = { reef: "☀️", twilight: "🌒", midnight: "🌑" };
+  let zoneSegs = [];
+  function openZoneCard(room) {
+    const z = "zoneCard." + room;
+    const stats = ["light", "temperature", "pressure"].map((k) =>
+      withLabel(t("zoneCard." + k), renderSpeakable($("#zc-" + k), t(z + "." + k))));
+    $("#zcLightIco").textContent = LIGHT_ICON[room];
+    $("#zcMarker").setAttribute("transform", "translate(122," + MARKER_Y[room] + ")");
+    zoneSegs = [
+      renderSpeakable($("#zcTitle"), t("zoneCard.youAreIn", { zone: t("zones." + room) })),
+      renderSpeakable($("#zcWhere"), t(z + ".where")),
+      ...stats,
+      renderSpeakable($("#zcDesc"), M.facts[ARRIVAL_FACT[room]].text),
+      { text: t("zoneCard.didYouKnow") },
+      renderSpeakable($("#zcDyk"), M.facts[DID_YOU_KNOW[room]].text),
+    ];
+    earnFact(ARRIVAL_FACT[room]);
+    earnFact(DID_YOU_KNOW[room]);
+    if (!zoneCard.open) zoneCard.showModal();
+    $("#zcExplore").focus();
+    if (state.narration) narrator.speakNow(zoneSegs); else narrator.stop();
+  }
+  $("#zcExplore").addEventListener("click", () => zoneCard.close());
+  $("#listenZone").addEventListener("click", () => narrator.speakNow(zoneSegs));
+  zoneCard.addEventListener("close", () => { narrator.stop(); narrator.add(promptSeg); });
+  $("#btnWhere").addEventListener("click", () => openZoneCard(state.room));
 
   // ---------- Journal ----------
   const journal = $("#journal");
@@ -1039,8 +1316,13 @@
         card.className = "card z-" + room + (found ? "" : " locked");
         const b = document.createElement("b");
         const p = document.createElement("p");
-        b.textContent = found ? M.facts[id].title : "?";
-        p.textContent = found ? M.facts[id].text : t("ui.journalLocked");
+        if (found) {
+          const segs = [renderSpeakable(b, M.facts[id].title), renderSpeakable(p, M.facts[id].text)];
+          card.append(listenButton(() => segs));
+        } else {
+          b.textContent = "?";
+          p.textContent = t("ui.journalLocked");
+        }
         card.append(b, p);
         cards.append(card);
       });
@@ -1048,17 +1330,19 @@
       body.append(sec);
     });
     $("#journalCount").textContent = t("ui.journalCount", { found: state.facts.length, total: FACT_TOTAL });
+    narrator.stop();
     journal.showModal();
   }
   $("#btnJournal").addEventListener("click", openJournal);
   $("#btnJournalClose").addEventListener("click", () => journal.close());
   journal.addEventListener("click", (e) => { if (e.target === journal) journal.close(); });
 
-  $("#btnRestart").addEventListener("click", () => {
+  function restartGame() {
     if (!confirm(t("ui.restartConfirm"))) return;
     try { localStorage.removeItem(STORE); } catch (e) { /* ignore */ }
     location.reload();
-  });
+  }
+  $("#btnRestart").addEventListener("click", restartGame);
 
   // ---------- Mini-game: Turtle Lunch ----------
   const turtleGame = (() => {
@@ -1070,7 +1354,7 @@
 
     function panelShow(title, text, actions) {
       $("#turtleTitle").textContent = title;
-      $("#turtleText").textContent = text;
+      narrator.add(renderSpeakable($("#turtleText"), text));
       const row = $("#turtleActions");
       row.replaceChildren();
       actions.forEach((a) => {
@@ -1099,6 +1383,7 @@
       if (state.room === "reef") ROOM.reef.enter();
     }
     function start() {
+      narrator.stop();
       panel.hidden = true;
       g = newGame();
       last = performance.now();
@@ -1261,8 +1546,21 @@
   // ---------- Start ----------
   state.pairs.forEach((key) => applyPair(key, false));
   updateCount(false);
-  // Testing shortcut: index.html#midnight opens that room directly.
+  // Welcome screen. Browsers only allow speech after a click, so it also starts the narrator.
+  const welcome = $("#welcome");
+  const hasProgress = state.facts.length > 0;
+  $("#btnStart").textContent = t(hasProgress ? "welcome.continue" : "welcome.start");
+  $("#btnStartOver").hidden = !hasProgress;
+  $("#btnStartOver").addEventListener("click", restartGame);
+  $("#btnStart").addEventListener("click", () => {
+    welcome.hidden = true;
+    narrator.start();
+    openZoneCard(state.room);
+  });
+  // Testing shortcut: index.html#midnight skips the welcome screen and opens that room directly.
   const hashRoom = location.hash.slice(1);
+  if (ROOMS.includes(hashRoom)) { welcome.hidden = true; narrator.start(); }
+  else $("#btnStart").focus();
   showRoom(ROOMS.includes(hashRoom) ? hashRoom : state.room);
 })();
 </script>

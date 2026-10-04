@@ -17,7 +17,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 try { localStorage.removeItem("deep-see-world:v1"); } catch (e) { /* fresh profile anyway */ }
 const frame = document.getElementById("game");
-frame.src = "../index.html#reef";
+frame.src = "../index.html";
 frame.addEventListener("load", () => run().catch((e) => { failures++; log("FAIL crashed: " + e); }).finally(() => log("DONE " + failures)));
 
 async function run() {
@@ -34,9 +34,42 @@ async function run() {
   };
   await wait(300);
 
+  // A stand-in voice: headless Chrome can't speak, so record what would be read aloud.
+  const spoken = [];
+  const voice = { name: "Test voice", lang: "en-US", localService: true, default: true, voiceURI: "test" };
+  const synth = { getVoices: () => [voice], speak: (u) => spoken.push(u.text), cancel() {}, pause() {}, resume() {}, speaking: false, pending: false, paused: false };
+  Object.defineProperty(w, "speechSynthesis", { configurable: true, get: () => synth });
+  const lastSpoken = () => spoken[spoken.length - 1] || "";
+  const closeZoneCard = async (zone) => {
+    check(zone + ": Where-am-I card opens on arrival", $("#zoneCard").open);
+    check(zone + ": card is read aloud", spoken.some((x) => x.includes("You are in the " + zone)));
+    $("#zcExplore").click();
+    await wait(50);
+  };
+
+  // --- Welcome screen and the first Where-am-I card ---
+  check("welcome: shown on load", !$("#welcome").hidden);
+  check("welcome: nothing is read before the first click", spoken.length === 0);
+  $("#btnStart").click();
+  check("welcome: start hides it", $("#welcome").hidden);
+  check("zone card: speaks temperatures in words", spoken.some((x) => x.includes("25 to 29 degrees Celsius")));
+  check("zone card: stats are read with their labels", spoken.some((x) => x.startsWith("Pressure: ")));
+  check("zone card: awards its facts", ["sunlit", "redLight"].every((f) => saved().facts.includes(f)));
+  await closeZoneCard("Sunlit Zone");
+  check("narration: closing the card reads the reef instructions", lastSpoken().startsWith("Welcome to the coral reef"));
+
   // --- Reef: symbiosis pairs ---
   hit("clownfish");
   check("reef: picking an animal shows its clue", prompt().startsWith("Clownfish:"));
+  await wait(20);
+  check("narration: clues are read without quote marks", lastSpoken().startsWith("Clownfish: I need a home") && !lastSpoken().includes("“"));
+  $("#btnNarration").click();
+  const before = spoken.length;
+  hit("clownfish");
+  await wait(20);
+  check("narration: the read-aloud switch turns it off", spoken.length === before && saved().narration === false);
+  $("#btnNarration").click();
+  check("narration: turning it back on rereads the instruction", spoken.length === before + 1);
   hit("eel");
   check("reef: a wrong pair is explained", prompt().includes("aren't partners"));
   hit("clownfish"); hit("anemone");
@@ -53,6 +86,8 @@ async function run() {
   hit("turtle");
   action("Turtle Lunch");
   check("turtle: game opens", !$("#turtle").hidden);
+  await wait(20);
+  check("turtle: instructions are read, arrows spoken as words", lastSpoken().includes("the arrow keys") && !lastSpoken().includes("←"));
   [...d.querySelectorAll("#turtleActions button")].find((b) => b.textContent.includes("Start")).click();
   await wait(1500);
   check("turtle: game panel hides while playing", $("#turtlePanel").hidden);
@@ -63,6 +98,7 @@ async function run() {
   $("#btnDown").click();
   await wait(1000);
   check("twilight: arrived", saved().room === "twilight");
+  await closeZoneCard("Twilight Zone");
   action("Let's go");
   action("Stay deep");
   check("twilight: wrong night answer is explained", prompt().includes("go hungry"));
@@ -79,6 +115,7 @@ async function run() {
   $("#btnDown").click();
   await wait(1000);
   check("midnight: arrived", saved().room === "midnight");
+  await closeZoneCard("Midnight Zone");
   let seen = [];
   new w.MutationObserver((muts) => muts.forEach((m) => {
     if (m.target.classList.contains("flash") && !(m.oldValue || "").includes("flash")) seen.push(m.target.id.replace("light-", ""));
@@ -109,7 +146,8 @@ async function run() {
 
   // --- Journal ---
   $("#btnJournal").click();
-  check("journal: lists 21 cards", d.querySelectorAll("#journalBody .card").length === 21);
+  check("journal: lists 24 cards", d.querySelectorAll("#journalBody .card").length === 24);
+  check("journal: every found fact has a listen button", d.querySelectorAll("#journalBody .card:not(.locked) .listen").length === saved().facts.length);
   check("journal: found facts are unlocked", d.querySelectorAll("#journalBody .card:not(.locked)").length === saved().facts.length);
 }
 </script>

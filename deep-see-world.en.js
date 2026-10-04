@@ -11,13 +11,51 @@ window.__dswMessages["en"] = {
     "close": "Close",
     "letsGo": "Let's go!",
     "openJournal": "Open Sea Journal",
-    "sound": "Sound on or off",
+    "sound": "Sound effects on or off",
+    "narration": "Read aloud on or off",
+    "listen": "Hear it again",
+    "whereAmI": "Where am I?",
     "diveDeeper": "Dive deeper ↓",
     "swimUp": "Swim up ↑",
     "newFact": "New fact!",
     "restart": "Start over",
     "restartConfirm": "Start the whole adventure again? Your Sea Journal will be emptied.",
     "depth": "{meters} m deep"
+  },
+  "welcome": {
+    "tagline": "Dive from a sunny coral reef all the way down to the darkest deep sea. Solve puzzles, meet amazing animals, and fill your Sea Journal with true ocean facts!",
+    "start": "Start the dive",
+    "continue": "Continue the dive",
+    "restart": "Start over",
+    "hint": "Turn your sound on: a friendly voice will read everything to you."
+  },
+  "zoneCard": {
+    "youAreIn": "You are in the {zone}",
+    "light": "Light",
+    "temperature": "Temperature",
+    "pressure": "Pressure",
+    "didYouKnow": "Did you know?",
+    "here": "You are here",
+    "deeper": "Even deeper…",
+    "explore": "Explore!",
+    "reef": {
+      "where": "10 meters deep, on a coral reef",
+      "light": "Bright sunlight",
+      "temperature": "Warm: about 25 to 29 °C",
+      "pressure": "Twice as strong as at the surface"
+    },
+    "twilight": {
+      "where": "500 meters deep, in the open ocean",
+      "light": "Just a faint blue glow",
+      "temperature": "Chilly: often about 5 to 10 °C",
+      "pressure": "About 50 times as strong as at the surface"
+    },
+    "midnight": {
+      "where": "2,000 meters deep, in the open ocean",
+      "light": "None. The only light comes from animals.",
+      "temperature": "Very cold: about 4 °C",
+      "pressure": "About 200 times as strong as at the surface"
+    }
   },
   "zones": {
     "reef": "Sunlit Zone",
@@ -65,7 +103,7 @@ window.__dswMessages["en"] = {
     "offer": "This leatherback sea turtle is hungry. Want to help it eat jellyfish and dodge the plastic bags?",
     "play": "Play Turtle Lunch",
     "title": "Turtle Lunch",
-    "howTo": "Move the turtle with your mouse, finger, or ← → keys. Eat 10 jellyfish 🪼. Avoid plastic bags!",
+    "howTo": "Move the turtle with your mouse, finger, or the ← → arrow keys. Eat 10 jellyfish 🪼. Avoid plastic bags!",
     "go": "Start!",
     "score": "Jellyfish: {score} / {goal}",
     "ouch": "Yuck, that was plastic!",
@@ -103,6 +141,10 @@ window.__dswMessages["en"] = {
       "title": "The loudest snap",
       "text": "A pistol shrimp snaps its claw so fast that it makes a bubble. When the bubble pops, it is loud enough to stun small fish."
     },
+    "redLight": {
+      "title": "Where did red go?",
+      "text": "Water soaks up the colors of sunlight one by one. Red goes first: about 10 meters down, most red light is gone, so red things look dull and brownish."
+    },
     "oxygen": {
       "title": "The ocean helps you breathe",
       "text": "Tiny ocean plants called phytoplankton make about half of the oxygen on Earth. Thank them for every other breath!"
@@ -114,6 +156,10 @@ window.__dswMessages["en"] = {
     "twilight": {
       "title": "The Twilight Zone",
       "text": "From 200 to 1,000 meters deep, there is only a dim blue glow. It is too dark for plants to grow."
+    },
+    "redAnimals": {
+      "title": "Red is the new black",
+      "text": "Many twilight animals are red. Red light never reaches this deep, so a red animal looks black and is very hard for predators to see."
     },
     "migration": {
       "title": "The biggest trip on Earth",
@@ -134,6 +180,10 @@ window.__dswMessages["en"] = {
     "midnight": {
       "title": "The Midnight Zone",
       "text": "Below 1,000 meters, no sunlight ever reaches. It is pitch dark and cold, only about 4 °C."
+    },
+    "bigMouths": {
+      "title": "Never miss a meal",
+      "text": "Food is rare in the dark deep sea. Many animals here have huge mouths and stretchy stomachs, so they can swallow almost any meal they find, even a big one!"
     },
     "pressure": {
       "title": "Under pressure",

@@ -68,6 +68,9 @@ missing = sorted(k for k in keys if not isinstance(lookup(M, k), str))
 dynamic = ["zones." + r for r in ("reef", "twilight", "midnight")]
 dynamic += ["reef.clue." + a for a in ("clownfish", "anemone", "shrimp", "eel", "pistol", "goby")]
 dynamic += ["twilight." + k for k in ("night", "day", "goodNight", "badNight", "goodDay", "badDay")]
+dynamic += ["zoneCard." + k for k in ("light", "temperature", "pressure")]
+dynamic += ["zoneCard.%s.%s" % (r, k) for r in ("reef", "twilight", "midnight") for k in ("where", "light", "temperature", "pressure")]
+dynamic += ["welcome.start", "welcome.continue"]
 missing += [k for k in dynamic if not isinstance(lookup(M, k), str)]
 if missing:
     bad("all referenced messages exist", ", ".join(missing))
@@ -93,7 +96,7 @@ else:
 
 earnable = set(re.findall(r'data-fact="(\w+)"', html))
 earnable |= set(re.findall(r'showFact\("(\w+)"', script))
-for block in re.findall(r"(?:ARRIVAL_FACT|PAIR_FACT) = \{([^}]*)\}", script):
+for block in re.findall(r"(?:ARRIVAL_FACT|PAIR_FACT|DID_YOU_KNOW) = \{([^}]*)\}", script):
     earnable |= set(re.findall(r':\s*"(\w+)"', block))
 earnable |= set(re.findall(r'showFact\([^)]*\?\s*"(\w+)"', script))
 unearnable = sorted(set(facts) - earnable)
