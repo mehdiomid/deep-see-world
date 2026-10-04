@@ -193,6 +193,32 @@
   .card .listen { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; font-size: .85rem; }
   .card b { padding-right: 34px; }
 
+  /* Voice settings */
+  dialog.voicepanel {
+    width: min(440px, calc(100% - 32px)); border: 0; border-radius: 18px; padding: 20px;
+    background: var(--panel); color: var(--ink);
+  }
+  dialog.voicepanel::backdrop { background: #0008; }
+  .voicepanel h2 { margin: 0 0 16px; font-size: 1.25rem; }
+  .vp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; font-weight: 600; }
+  .seg { display: inline-flex; background: #ffffff14; border-radius: 999px; padding: 3px; }
+  .seg button { border: 0; background: none; color: var(--ink); padding: 7px 13px; border-radius: 999px; cursor: pointer; font-weight: 600; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .seg button:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; }
+  #vpVoice { font: inherit; padding: 7px 10px; border-radius: 10px; border: 0; background: #ffffff1f; color: var(--ink); max-width: 240px; }
+  #vpVoice option { color: #000; }
+  .vp-tip { font-size: .88rem; color: var(--ink-soft); line-height: 1.45; margin: 4px 0 16px; }
+  .vp-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* Locked dive button and its hint */
+  .nav-btn.down.locked { background: #0b2f52e6; color: var(--ink); animation: none; box-shadow: inset 0 0 0 2px #ffffff30, 0 4px 14px #0007; }
+  .toast {
+    position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 3;
+    background: #021a30ee; color: var(--ink); padding: 10px 16px; border-radius: 12px;
+    width: max-content; max-width: min(90%, 520px); text-align: center; line-height: 1.4;
+    box-shadow: 0 6px 20px #0008; animation: factIn .3s ease;
+  }
+
   /* Welcome screen */
   .welcome {
     position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; text-align: center;
@@ -204,6 +230,11 @@
   .welcome .mascot { font-size: 3.6rem; animation: bob 3s ease-in-out infinite; }
   .welcome p { margin: 0; font-size: 1.15rem; line-height: 1.5; }
   .welcome .hint { color: var(--ink-soft); font-size: .95rem; }
+  .welcome .how { background: #ffffff12; border-radius: var(--radius); padding: 14px 18px; text-align: left; width: 100%; }
+  .welcome .how h2 { margin: 0 0 8px; font-size: 1.05rem; color: var(--accent); }
+  .welcome .how ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+  .welcome .how li { display: grid; grid-template-columns: 28px 1fr; gap: 6px; line-height: 1.4; }
+  .welcome .how li:nth-child(2) { font-weight: 700; }
   .welcome .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
   .welcome .bubbles span {
     position: absolute; bottom: -40px; border-radius: 50%; border: 2px solid #ffffff55; background: #ffffff14;
@@ -647,7 +678,8 @@
     </svg>
 
     <button class="btn primary nav-btn up" id="btnUp" type="button" hidden></button>
-    <button class="btn primary nav-btn down" id="btnDown" type="button" hidden></button>
+    <button class="btn primary nav-btn down" id="btnDown" type="button"></button>
+    <div class="toast" id="toast" role="status" hidden></div>
   </div>
 
   <section class="caption" aria-live="polite">
@@ -711,6 +743,20 @@
   </div>
 </dialog>
 
+<dialog class="voicepanel" id="voicePanel" aria-labelledby="vpTitle">
+  <h2 id="vpTitle">🗣️ <span data-t="ui.voiceSettings"></span></h2>
+  <div class="vp-row"><span data-t="ui.readAloud"></span>
+    <div class="seg" id="vpOnOff"><button type="button" data-v="on" data-t="ui.on"></button><button type="button" data-v="off" data-t="ui.off"></button></div></div>
+  <div class="vp-row"><span data-t="ui.speed"></span>
+    <div class="seg" id="vpSpeed"><button type="button" data-v="slow">🐢 <span data-t="ui.slow"></span></button><button type="button" data-v="medium" data-t="ui.medium"></button><button type="button" data-v="fast">🐇 <span data-t="ui.fast"></span></button></div></div>
+  <div class="vp-row"><label for="vpVoice" data-t="ui.voice"></label><select id="vpVoice"></select></div>
+  <p class="vp-tip" data-t="ui.voiceTip"></p>
+  <div class="vp-actions">
+    <button class="btn" id="vpTry" type="button">▶ <span data-t="ui.tryVoice"></span></button>
+    <button class="btn primary" id="vpClose" type="button" data-t="ui.close"></button>
+  </div>
+</dialog>
+
 <div class="welcome" id="welcome" role="dialog" aria-modal="true" aria-labelledby="welcomeTitle">
   <div class="bubbles" aria-hidden="true">
     <span style="left:8%;width:18px;height:18px;animation-duration:11s"></span>
@@ -724,6 +770,14 @@
     <div class="mascot" aria-hidden="true">🐋</div>
     <h1 id="welcomeTitle">Deep <span class="see">See</span> World</h1>
     <p data-t="welcome.tagline"></p>
+    <div class="how">
+      <h2 data-t="welcome.howTitle"></h2>
+      <ol>
+        <li><span aria-hidden="true">🔍</span><span data-t="welcome.how1"></span></li>
+        <li><span aria-hidden="true">🧩</span><span data-t="welcome.how2"></span></li>
+        <li><span aria-hidden="true">📖</span><span data-t="welcome.how3"></span></li>
+      </ol>
+    </div>
     <div class="row">
       <button class="btn primary big" id="btnStart" type="button"></button>
       <button class="btn" id="btnStartOver" type="button" data-t="welcome.restart" hidden></button>
@@ -774,11 +828,15 @@
   const FACT_TOTAL = Object.keys(M.facts).length;
   const DID_YOU_KNOW = { reef: "redLight", twilight: "redAnimals", midnight: "bigMouths" };
 
-  function fresh() { return { room: "reef", facts: [], solved: {}, pairs: [], muted: false, narration: true }; }
+  function fresh() { return { room: "reef", facts: [], solved: {}, pairs: [], muted: false, narration: false, narrationChosen: false, speed: "slow", voiceName: "" }; }
   function load() {
     try {
       const s = JSON.parse(localStorage.getItem(STORE));
-      if (s && ROOMS.includes(s.room)) return Object.assign(fresh(), s);
+      if (s && ROOMS.includes(s.room)) {
+        const loaded = Object.assign(fresh(), s);
+        if (!loaded.narrationChosen) loaded.narration = false;  // the voice used to be on by default
+        return loaded;
+      }
     } catch (e) { /* storage unavailable: start fresh */ }
     return fresh();
   }
@@ -828,13 +886,15 @@
     const NOVELTY = /Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Fred|Junior|Ralph|Kathy|Grandma|Grandpa|Eddy|Flo|Reed|Rocko|Sandy|Shelley/;
     const FAVORITE = /Samantha|Ava|Allison|Susan|Karen|Moira|Tessa|Serena|Daniel|Zira|Aria|Jenny|Libby|Sonia/;
     const synth = () => window.speechSynthesis;
-    let voice = null, pending = [], flushTimer = 0, lit = null, ready = false;
+    const RATES = { slow: 0.7, medium: 0.85, fast: 1 };
+    let voice = null, list = [], pending = [], flushTimer = 0, lit = null, ready = false;
     function pickVoice() {
       const s = synth();
       const local = s ? s.getVoices().filter((v) => v.localService && /^en([-_]|$)/i.test(v.lang) && !NOVELTY.test(v.name)) : [];
       const score = (v) => (/Enhanced|Premium|Natural/.test(v.name) ? 4 : 0) + (FAVORITE.test(v.name) ? 2 : 0) +
         (/^en[-_]US$/i.test(v.lang) ? 1 : 0) + (v.default ? 0.5 : 0);
-      voice = local.sort((a, b) => score(b) - score(a))[0] || null;
+      list = local.sort((a, b) => score(b) - score(a));
+      voice = list.find((v) => v.name === state.voiceName) || list[0] || null;
       document.body.classList.toggle("no-speech", !voice);
     }
     function unlight() { if (lit) lit.classList.remove("speaking"); lit = null; }
@@ -853,7 +913,7 @@
         if (!seg || !seg.text) return;
         const u = new SpeechSynthesisUtterance(seg.text);
         try { u.voice = voice; } catch (e) { /* non-native voice object */ }
-        u.lang = voice.lang; u.rate = 0.92; u.pitch = 1.05;
+        u.lang = voice.lang; u.rate = RATES[state.speed] || RATES.slow; u.pitch = 1;
         if (seg.marks) {
           u.onboundary = (e) => {
             if (e.name && e.name !== "word") return;
@@ -876,7 +936,12 @@
     }
     if (synth()) synth().onvoiceschanged = pickVoice;
     pickVoice();
-    return { add, speakNow, stop, refresh: pickVoice, start() { ready = true; pickVoice(); } };
+    return {
+      add, speakNow, stop, refresh: pickVoice,
+      start() { ready = true; pickVoice(); },
+      voices: () => list,
+      current: () => voice,
+    };
   })();
 
   // Wrap each word in a span and build the text the voice reads, so spoken words can be highlighted.
@@ -927,11 +992,43 @@
     btnNarration.title = t("ui.narration");
     btnNarration.setAttribute("aria-label", btnNarration.title);
   }
-  btnNarration.addEventListener("click", () => {
-    state.narration = !state.narration; save(); renderNarration();
-    if (state.narration) narrator.speakNow([promptSeg]); else narrator.stop();
-  });
   renderNarration();
+
+  const voicePanel = $("#voicePanel");
+  const sampleVoice = () => narrator.speakNow([{ text: t("ui.voiceSample") }]);
+  function setPressed(group, value) {
+    document.querySelectorAll(group + " button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === value)));
+  }
+  function renderVoicePanel() {
+    setPressed("#vpOnOff", state.narration ? "on" : "off");
+    setPressed("#vpSpeed", state.speed);
+    const sel = $("#vpVoice");
+    sel.replaceChildren(...narrator.voices().map((v) => new Option(v.name + " (" + v.lang.replace("_", "-") + ")", v.name)));
+    const cur = narrator.current();
+    if (cur) sel.value = cur.name;
+  }
+  const choice = (e) => e.target.closest("button[data-v]");
+  $("#vpOnOff").addEventListener("click", (e) => {
+    const b = choice(e);
+    if (!b) return;
+    state.narration = b.dataset.v === "on"; state.narrationChosen = true; save();
+    renderNarration(); renderVoicePanel();
+    if (state.narration) sampleVoice(); else narrator.stop();
+  });
+  $("#vpSpeed").addEventListener("click", (e) => {
+    const b = choice(e);
+    if (!b) return;
+    state.speed = b.dataset.v; save();
+    renderVoicePanel(); sampleVoice();
+  });
+  $("#vpVoice").addEventListener("change", (e) => {
+    state.voiceName = e.target.value; save();
+    narrator.refresh(); sampleVoice();
+  });
+  $("#vpTry").addEventListener("click", sampleVoice);
+  // Stop the sample here, not on the dialog's (asynchronous) close event, which could cancel the next narration.
+  $("#vpClose").addEventListener("click", () => { narrator.stop(); voicePanel.close(); });
+  btnNarration.addEventListener("click", () => { narrator.refresh(); renderVoicePanel(); voicePanel.showModal(); });
 
   // ---------- Caption & facts ----------
   const promptEl = $("#prompt"), actionsEl = $("#actions"), factEl = $("#fact");
@@ -1236,11 +1333,12 @@
   // ---------- Navigation ----------
   const stage = $("#stage"), btnUp = $("#btnUp"), btnDown = $("#btnDown");
   btnUp.textContent = t("ui.swimUp");
-  btnDown.textContent = t("ui.diveDeeper");
   function updateNav() {
     const i = ROOMS.indexOf(state.room);
+    const last = i === ROOMS.length - 1, open = !last && !!state.solved[state.room];
     btnUp.hidden = i === 0;
-    btnDown.hidden = !(i < ROOMS.length - 1 && state.solved[state.room]);
+    btnDown.classList.toggle("locked", !open);
+    btnDown.textContent = last ? t("ui.deepest") : open ? t("ui.diveDeeper") : t("ui.diveLocked");
   }
   function renderZone() {
     const i = ROOMS.indexOf(state.room);
@@ -1266,7 +1364,21 @@
     tone(600, 0.6, "sine", 0.06, 0, goingUp ? 1200 : 200);
     setTimeout(() => { showRoom(room); stage.classList.remove("diving"); }, 450);
   }
-  btnDown.addEventListener("click", () => goTo(ROOMS[ROOMS.indexOf(state.room) + 1]));
+  const toastEl = $("#toast");
+  let toastTimer = 0;
+  function toast(text) {
+    const seg = renderSpeakable(toastEl, text);
+    toastEl.hidden = false;
+    toastEl.style.animation = "none"; void toastEl.offsetWidth; toastEl.style.animation = "";
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastEl.hidden = true; }, 5000);
+    if (state.narration) narrator.speakNow([seg]);
+  }
+  btnDown.addEventListener("click", () => {
+    if (btnDown.classList.contains("locked")) { sfx.bad(); toast(t(state.room + ".locked")); return; }
+    toastEl.hidden = true;
+    goTo(ROOMS[ROOMS.indexOf(state.room) + 1]);
+  });
   btnUp.addEventListener("click", () => goTo(ROOMS[ROOMS.indexOf(state.room) - 1]));
 
   // ---------- Where am I? ----------

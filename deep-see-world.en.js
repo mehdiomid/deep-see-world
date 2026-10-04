@@ -12,7 +12,21 @@ window.__dswMessages["en"] = {
     "letsGo": "Let's go!",
     "openJournal": "Open Sea Journal",
     "sound": "Sound effects on or off",
-    "narration": "Read aloud on or off",
+    "narration": "Voice settings",
+    "voiceSettings": "Voice settings",
+    "readAloud": "Read aloud",
+    "on": "On",
+    "off": "Off",
+    "speed": "Speed",
+    "slow": "Slow",
+    "medium": "Medium",
+    "fast": "Fast",
+    "voice": "Voice",
+    "tryVoice": "Try it",
+    "voiceSample": "Hi! I'm your guide to the deep sea. Let's explore together!",
+    "voiceTip": "Sounds robotic? Your device may have nicer voices you can download for free. Look for “Enhanced” or “Premium” voices in your system's speech settings.",
+    "diveLocked": "🔒 Dive deeper",
+    "deepest": "🔒 Even deeper…",
     "listen": "Hear it again",
     "whereAmI": "Where am I?",
     "diveDeeper": "Dive deeper ↓",
@@ -27,7 +41,11 @@ window.__dswMessages["en"] = {
     "start": "Start the dive",
     "continue": "Continue the dive",
     "restart": "Start over",
-    "hint": "Turn your sound on: a friendly voice will read everything to you."
+    "howTitle": "How to play",
+    "how1": "Click on animals and things in the sea to discover true facts.",
+    "how2": "Solve the puzzle in each zone to unlock the way deeper. Your first puzzle is on the coral reef!",
+    "how3": "Collect every fact in your Sea Journal.",
+    "hint": "Want everything read aloud? Turn on the voice with the 🗣️ button at the top."
   },
   "zoneCard": {
     "youAreIn": "You are in the {zone}",
@@ -67,6 +85,7 @@ window.__dswMessages["en"] = {
     "pick": "Now click the animal that could be its partner.",
     "wrong": "Hmm, those two aren't partners. Listen to what each animal needs and try again!",
     "match": "A perfect match! Can you find another pair of partners?",
+    "locked": "To dive deeper, first match all the animal partners on the reef.",
     "done": "You matched every pair! Animals that help each other are called partners in symbiosis. The way down to the Twilight Zone is open.",
     "clue": {
       "clownfish": "Clownfish: “I need a home where big fish can't get me. Something with stinging tentacles would be perfect!”",
@@ -87,7 +106,8 @@ window.__dswMessages["en"] = {
     "badNight": "They'd be safe down here, but they'd go hungry! The food is near the surface.",
     "goodDay": "Well done! Down in the dark, predators can't see them.",
     "badDay": "Uh-oh! In daylight, predators near the surface would see them. Try again!",
-    "done": "You helped the lanternfish make the biggest trip on Earth! The way down to the Midnight Zone is open."
+    "done": "You helped the lanternfish make the biggest trip on Earth! The way down to the Midnight Zone is open.",
+    "locked": "To dive deeper, first help the lanternfish with their daily trip."
   },
   "midnight": {
     "intro": "Welcome to the Midnight Zone. No sunlight ever reaches this deep. Move your light around to explore. Many animals here talk by flashing light!",
@@ -97,7 +117,8 @@ window.__dswMessages["en"] = {
     "yourTurn": "Your turn! Click the animals in the same order.",
     "good": "Great! Now a longer one…",
     "wrong": "Oops, wrong order. Watch again!",
-    "done": "You spoke the language of light! You've explored from the sunlit reef all the way down to the Midnight Zone."
+    "done": "You spoke the language of light! You've explored from the sunlit reef all the way down to the Midnight Zone.",
+    "locked": "This is as deep as our dive goes for now. Even deeper zones are coming soon!"
   },
   "turtle": {
     "offer": "This leatherback sea turtle is hungry. Want to help it eat jellyfish and dodge the plastic bags?",

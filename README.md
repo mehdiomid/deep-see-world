@@ -9,7 +9,8 @@ Everything runs in the browser. No server, no downloads, no external libraries o
 art is hand-drawn SVG and the sounds are made on the fly with the Web Audio API.
 
 **Read aloud.** A voice reads every instruction, clue, and fact, with each word highlighted as it's
-spoken. It's on by default (switch it with 🗣️ in the top bar), and 🔈 buttons replay any text. It
+spoken. It's off by default; 🔈 buttons read any text on demand. The 🗣️ button in the top bar opens voice
+settings: turn the voice on or off, speed (🐢 slow is the default), and which voice to use. It
 uses the browser's built-in speech with **on-device voices only**, so no text is sent anywhere. Voice
 quality depends on the device. If no voice is available, the read-aloud buttons hide themselves.
 

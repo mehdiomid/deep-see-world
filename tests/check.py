@@ -71,6 +71,7 @@ dynamic += ["twilight." + k for k in ("night", "day", "goodNight", "badNight", "
 dynamic += ["zoneCard." + k for k in ("light", "temperature", "pressure")]
 dynamic += ["zoneCard.%s.%s" % (r, k) for r in ("reef", "twilight", "midnight") for k in ("where", "light", "temperature", "pressure")]
 dynamic += ["welcome.start", "welcome.continue"]
+dynamic += [r + ".locked" for r in ("reef", "twilight", "midnight")]
 missing += [k for k in dynamic if not isinstance(lookup(M, k), str)]
 if missing:
     bad("all referenced messages exist", ", ".join(missing))

@@ -35,11 +35,12 @@ async function run() {
   await wait(300);
 
   // A stand-in voice: headless Chrome can't speak, so record what would be read aloud.
-  const spoken = [];
+  const spoken = [], rates = [];
   const voice = { name: "Test voice", lang: "en-US", localService: true, default: true, voiceURI: "test" };
-  const synth = { getVoices: () => [voice], speak: (u) => spoken.push(u.text), cancel() {}, pause() {}, resume() {}, speaking: false, pending: false, paused: false };
+  const synth = { getVoices: () => [voice], speak: (u) => { spoken.push(u.text); rates.push(u.rate); }, cancel() {}, pause() {}, resume() {}, speaking: false, pending: false, paused: false };
   Object.defineProperty(w, "speechSynthesis", { configurable: true, get: () => synth });
   const lastSpoken = () => spoken[spoken.length - 1] || "";
+  const near = (a, b) => Math.abs(a - b) < 0.01;  // the browser stores rates as 32-bit floats
   const closeZoneCard = async (zone) => {
     check(zone + ": Where-am-I card opens on arrival", $("#zoneCard").open);
     check(zone + ": card is read aloud", spoken.some((x) => x.includes("You are in the " + zone)));
@@ -50,10 +51,20 @@ async function run() {
   // --- Welcome screen and the first Where-am-I card ---
   check("welcome: shown on load", !$("#welcome").hidden);
   check("welcome: nothing is read before the first click", spoken.length === 0);
+  check("welcome: explains that puzzles unlock the way deeper", $("#welcome").textContent.includes("Solve the puzzle in each zone to unlock the way deeper"));
   $("#btnStart").click();
   check("welcome: start hides it", $("#welcome").hidden);
+  await wait(20);
+  check("narration: voice is off by default", spoken.length === 0 && saved().narration === false);
+  // Turn the voice on, then reopen the Where-am-I card to hear it.
+  $("#zcExplore").click();
+  $("#btnNarration").click();
+  $('#vpOnOff button[data-v="on"]').click();
+  $("#vpClose").click();
+  $("#btnWhere").click();
   check("zone card: speaks temperatures in words", spoken.some((x) => x.includes("25 to 29 degrees Celsius")));
   check("zone card: stats are read with their labels", spoken.some((x) => x.startsWith("Pressure: ")));
+  check("narration: reads slowly by default", rates.length > 0 && rates.every((r) => near(r, 0.7)));
   check("zone card: awards its facts", ["sunlit", "redLight"].every((f) => saved().facts.includes(f)));
   await closeZoneCard("Sunlit Zone");
   check("narration: closing the card reads the reef instructions", lastSpoken().startsWith("Welcome to the coral reef"));
@@ -63,13 +74,30 @@ async function run() {
   check("reef: picking an animal shows its clue", prompt().startsWith("Clownfish:"));
   await wait(20);
   check("narration: clues are read without quote marks", lastSpoken().startsWith("Clownfish: I need a home") && !lastSpoken().includes("“"));
+  const panelPick = (group, v) => $(group + ' button[data-v="' + v + '"]').click();
   $("#btnNarration").click();
+  check("voice panel: opens from the read-aloud button", $("#voicePanel").open);
+  check("voice panel: lists the device's voices", $("#vpVoice").options.length === 1);
+  panelPick("#vpSpeed", "fast");
+  check("voice panel: speed change plays a sample at that speed", lastSpoken().startsWith("Hi! I'm your guide") && near(rates[rates.length - 1], 1));
+  panelPick("#vpSpeed", "slow");
+  panelPick("#vpOnOff", "off");
+  $("#vpClose").click();
   const before = spoken.length;
   hit("clownfish");
   await wait(20);
   check("narration: the read-aloud switch turns it off", spoken.length === before && saved().narration === false);
   $("#btnNarration").click();
-  check("narration: turning it back on rereads the instruction", spoken.length === before + 1);
+  panelPick("#vpOnOff", "on");
+  $("#vpClose").click();
+  hit("clownfish");
+  await wait(20);
+  check("narration: turning it back on reads again, slowly", lastSpoken().startsWith("Clownfish:") && near(rates[rates.length - 1], 0.7));
+  check("dive: button is visible but locked before solving", $("#btnDown").classList.contains("locked") && $("#btnDown").textContent.includes("🔒"));
+  $("#btnDown").click();
+  await wait(20);
+  check("dive: locked button explains what to do", !$("#toast").hidden && lastSpoken().includes("first match all the animal partners"));
+  check("dive: locked button doesn't leave the reef", saved().room === "reef");
   hit("eel");
   check("reef: a wrong pair is explained", prompt().includes("aren't partners"));
   hit("clownfish"); hit("anemone");
@@ -78,7 +106,7 @@ async function run() {
   await wait(1000);
   check("reef: solved after three pairs", saved().solved.reef === true);
   check("reef: pair facts collected", ["anemone", "cleaner", "goby"].every((f) => saved().facts.includes(f)));
-  check("reef: dive button appears", !$("#btnDown").hidden);
+  check("reef: dive button unlocks", !$("#btnDown").classList.contains("locked") && $("#btnDown").textContent.includes("Dive deeper"));
   hit("pistol");
   check("reef: paired pistol shrimp teaches its snap", saved().facts.includes("pistolSnap"));
 
@@ -142,6 +170,7 @@ async function run() {
   }
   await wait(1500);
   check("midnight: solved", saved().solved.midnight === true);
+  check("midnight: last zone says deeper zones are coming", $("#btnDown").classList.contains("locked") && $("#btnDown").textContent.includes("Even deeper"));
   check("midnight: final facts", ["bioluminescence", "unexplored"].every((f) => saved().facts.includes(f)));
 
   // --- Journal ---
